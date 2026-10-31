@@ -10,7 +10,9 @@ router = APIRouter()
 # Fixed tokens from .env so the links you paste into the decoy doc/email keep working after a restart:
 # HONEY_TOKENS=decoy-doc:Xq3v9LmP,decoy-email:Tb7wQ2rN   (make your own random strings)
 TOKENS = {tok: where for where, tok in (p.split(":", 1) for p in env("HONEY_TOKENS").split(",") if ":" in p)}
-PREVIEW_BOTS = ("telegrambot", "whatsapp", "facebookexternalhit", "slackbot", "googlebot", "bingbot", "discordbot")
+# "google" covers Googlebot and Google's own link checkers (Docs, Gmail safety scans, image proxy).
+# Ordinary Chrome has no "google" in its browser ID, so real clicks still count.
+PREVIEW_BOTS = ("telegrambot", "whatsapp", "facebookexternalhit", "slackbot", "google", "bingbot", "discordbot")
 
 def new_token(planted_in):
     t = secrets.token_urlsafe(8)

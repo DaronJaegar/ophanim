@@ -7,6 +7,15 @@ class DriveWatcher:
         self.token = svc.changes().getStartPageToken().execute()["startPageToken"]
         self.seen_public = set()
 
+    def _parent_public(self, fid):
+        """True if a folder holding this file is shared with anyone (sharing a folder of 8 PDFs = 1 alert, not 9)."""
+        try:
+            parents = self.svc.files().get(fileId=fid, fields="parents").execute().get("parents", [])
+            return any(p["type"] == "anyone" for parent in parents for p in
+                       self.svc.permissions().list(fileId=parent, fields="permissions(type)").execute().get("permissions", []))
+        except Exception:                   # can't tell -> alert anyway (safer than missing it)
+            return False
+
     def poll(self):
         out, token = [], self.token
         while token:
@@ -26,6 +35,8 @@ class DriveWatcher:
                 public = [p for p in perms.get("permissions", []) if p["type"] == "anyone"]
                 if not public:
                     self.seen_public.discard(fid)  # made private again -> re-sharing alerts again
+                elif self._parent_public(fid):      # public only through its folder: the folder's alert covers it
+                    continue
                 elif fid not in self.seen_public:
                     self.seen_public.add(fid)
                     out.append(("file_public", {"file_id": fid, "name": name,

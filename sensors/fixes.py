@@ -15,14 +15,23 @@ def delete_filter(f, audit):
     audit.append({"kind": "fix", "what": "delete_filter", "id": f["id"], "verified": gone})
     return gone
 
-def make_private(file_id, audit):
-    svc = drive(DRIVE_WRITE_SCOPES, "token_drive_write.json")   # asks for write access the first time only
+def make_private(file_id, audit, depth=0, svc=None):
+    svc = svc or drive(DRIVE_WRITE_SCOPES, "token_drive_write.json")   # asks for write access the first time only
     perms = svc.permissions().list(fileId=file_id, fields="permissions(id,type,role)").execute()
     audit.append({"kind": "evidence", "what": "drive_permissions", "file_id": file_id, "perms": perms})
     for p in perms.get("permissions", []):
         if p["type"] == "anyone":
-            svc.permissions().delete(fileId=file_id, permissionId=p["id"]).execute()
+            try:
+                svc.permissions().delete(fileId=file_id, permissionId=p["id"]).execute()
+            except HttpError as e:
+                if e.resp.status not in (400, 403):   # 403 = inherited from its folder: fixed below
+                    raise
     after = svc.permissions().list(fileId=file_id, fields="permissions(type)").execute()
+    if depth < 5 and any(p["type"] == "anyone" for p in after.get("permissions", [])):
+        # A file in a shared folder is public through the folder: make the folder private instead.
+        for parent in svc.files().get(fileId=file_id, fields="parents").execute().get("parents", []):
+            make_private(parent, audit, depth + 1, svc)
+        after = svc.permissions().list(fileId=file_id, fields="permissions(type)").execute()
     ok = all(p["type"] != "anyone" for p in after.get("permissions", []))
     audit.append({"kind": "fix", "what": "make_private", "file_id": file_id, "verified": ok})
     return ok

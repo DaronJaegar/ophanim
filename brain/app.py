@@ -106,7 +106,10 @@ def post_event(e: Event):
         G.mark_live(graph, "attacker", "drive", "public_link_live")
     elif e.type == "honeytoken_hit":
         severity, title = "high", "A stranger opened the fake bank login we hid in your files"
-        G.mark_live(graph, "attacker", "gmail")
+        if "email" in e.evidence.get("planted_in", ""):    # decoy email: they are in the mailbox
+            G.mark_live(graph, "attacker", "gmail")
+        else:                                             # decoy doc lives in Drive: attacker -> records path
+            G.mark_live(graph, "attacker", "drive", "decoy_opened")
     elif e.type == "ransomware_suspected":
         severity, title, policy = "critical", "Your front-desk computer started locking files", "auto"
         G.mark_live(graph, "attacker", "pc"); G.mark_live(graph, "pc", "records")

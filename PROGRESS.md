@@ -15,14 +15,24 @@ Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-
 - Real credentials now work on Aaron's laptop: Google OAuth (clinic account, Gmail + Drive read OK) and the Telegram bot token (`@sahayak_incognito_bot`, `getMe` OK).
 - What still blocks the Phase 0 gate: chat IDs and honeytokens in `.env`, clinic Drive content, Ayan's Linux PC, organiser answers, and each teammate's own smoke test (section 8).
 
+### Next actions (2026-10-31 evening, in order)
+State now: **Remove it worked on a real phone (2026-10-31 14:15 UTC run, see section 13)**; clinic Gmail has 0 filters (forwarding address still accepted, kept for reruns); Drive set up (Patient records, Invoices, Netbanking login, all private); decoy email sent; local `main` = GitHub + this file.
+1. ~~Gate 1 core: Remove it on a real phone~~ **done**. Still to measure: seconds from Bruce creating the filter to the alert on the phone (< 45 s); confirm the phone said "We checked: it's gone" and the console path went grey.
+2. Same session: tap **What does this mean? / Show me how / Call my IT helper**; forward "our bank account has changed" to the bot -> vendor taps **No** -> owner sees **FAKE INVOICE**; check the AI-worded alerts read well on the phone.
+3. Repeat the email story 3 times from a clean reset; `git tag gate1`.
+4. **Ayan:** send the `ALL PASS` screenshot; run the false-trigger tests (zip, backup copy, 40 photo renames, 30 quick edits) and 5 timed runs (median files locked + seconds to contain) in dry run; check the new meter, backup line, suspension and restore on Linux.
+5. **Gate 2 (whole team):** `DRY_RUN=0` on Ayan's PC -> google blocked, brain reachable, contained < 10 s -> Release (back in 3-5 s) -> Restore; 3 full kill-chain runs; `git tag gate2`.
+6. **Setup gaps:** ~~Drive upload + decoy email~~ done; confirm 2-step login is off; ask organisers (starter code, hotspot); share CONTRACTS.md.
+7. **After the gates:** venue alerts-per-hour run, expert view (MITRE), reset script, offline test, dry runs, pitch rehearsal.
+
 ### Phase checklist
 | Phase | Gate | Status |
 | --- | --- | --- |
-| 0 Before event (setup only) | all four pass smoke test | **In progress** (Aaron's code + Google + Telegram token done; items in 8 open) |
-| 1 Brain alone + console (Sessions 1-2) | Review 1, 2:30 pm | Code ready, not rehearsed on a projector |
-| 2 Golden path part 1, email (Session 3) | Gate 1, 7:30 pm | Not started. Unblocked on Google side; needs chat IDs in `.env` |
-| 3 Golden path part 2, PC + correlation (Session 4) | Gate 2, 2:30 am | Not started (needs Ayan's PC); merge logic verified |
-| 4 Proof + Should features | Freeze 5:30 am | Eval sets A/B/C done; expert view etc. not started |
+| 0 Before event (setup only) | all four pass smoke test | **Nearly done**: credentials, bot, chat IDs, vendor, honeytokens, AI wording, agent token all set; open: Drive upload, 2-step check, organiser answers, Ayan's ALL PASS screenshot |
+| 1 Brain alone + console (Sessions 1-2) | Review 1, 2:30 pm | **Done** (console projector-ready, events from teammates' laptops); rehearsal left |
+| 2 Golden path part 1, email (Session 3) | Gate 1, 7:30 pm | **Core done**: real filter (score 7) -> alert -> owner taps Remove it -> deleted + verified in Gmail. Left: timing, explanation buttons, Paisa Pause, 3 clean runs |
+| 3 Golden path part 2, PC + correlation (Session 4) | Gate 2, 2:30 am | **In progress**: agent -> brain, heartbeat alert (16 s), email+PC merge, agent token all live in dry run; real containment not yet |
+| 4 Proof + Should features | Freeze 5:30 am | Eval A/B/C done; agent upgrades + venue baseline tool written; expert view not started |
 | 5 Freeze, reset, offline, dry runs | Dry runs 7:15 / 8:35 | Not started |
 | 6 Final review + pitch | 9 am - 12 pm | Not started |
 
@@ -51,7 +61,7 @@ Team: Bruce = A (account sensors), Aaron = B (brain + console + eval), Ayan = C 
 ---
 
 ## 4. What the code contains (per module, with state)
-Run all commands from the project folder. `pytest`: **32 passed** (test_brain 4, test_brain_flow 7, test_detector 7, test_sahayak 14).
+Run all commands from the project folder. `pytest`: **36 passed** (test_brain 4, test_brain_flow 7, test_detector 7, test_sahayak 18).
 
 ### 4.1 Brain (Aaron) - `brain/`
 - `app.py`: `POST /events`, `POST /actions`, `POST /heartbeat`, `GET /agent/commands`, `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, honeytoken router mount, background heartbeat watcher (5 s tick, 15 s silence = `heartbeat_missing`), Sahayak notifier plugged in at startup. Aaron's fixes: section 5.3 and 7.1.
@@ -69,7 +79,7 @@ Bruce's fixes pushed 2026-10-31:
 - `b27ad79`: the Gmail snapshot only advances after the brain accepts the event, so a brain restart or wrong `BRAIN_URL` no longer loses alerts; Drive errors can no longer block Gmail alerts.
 - `3984ffe`: Drive watcher skips removed files / per-file permission errors instead of freezing the change token, and forgets a file once private so a second demo run alerts again.
 
-State: **Google auth works on Aaron's laptop** (`credentials.json` for project `chakravyuh-demo`, Desktop-app client; `token_basic.json` signed in to the clinic account, matches `CLINIC_EMAIL`, has a refresh token; both git-ignored). Read-only check: Gmail 0 filters, 0 forwarding addresses (clean baseline); **Drive empty** (as of the last check). `sensors.run` has not yet been run against the brain.
+State: **Google auth works on Aaron's laptop** (`credentials.json` for project `chakravyuh-demo`, Desktop-app client; `token_basic.json` signed in to the clinic account, matches `CLINIC_EMAIL`, has a refresh token; both git-ignored). Read-only check: Gmail 0 filters, 0 forwarding addresses (clean baseline at first). **Drive set up (2026-10-31, checked via API):** `Patient records/` (8 notes), `Invoices/` (3), `Netbanking login.pdf` at the top of My Drive; nothing shared publicly. Decoy email sent to the clinic inbox (confirmed by Aaron; the read-only scopes cannot see mail). Both decoy links point at `10.215.200.40`: rebuild + re-upload + resend on the event hotspot. `sensors.run` has not yet been run against the brain.
 New `sensors/demo_files.py` (2026-10-31): `python -m sensors.demo_files` writes `demo_files/` (git-ignored): `Patient records/` with 8 fake patient notes, `Invoices/` with 3 fake vendor invoices, a decoy `Netbanking login.pdf` holding the decoy-doc honeytoken link, and `decoy_email.txt` with the decoy-email link. Every file is marked DEMO DATA; names and vendors are made up. Upload is manual: creating files would need the Drive write scope, which the design asks for only on the first "Make private" tap. **Re-run on event day** after `BRAIN_URL` changes to the hotspot IP, because the decoy links point at the brain.
 
 ### 4.3 PC agent (Ayan) - `agent/`
@@ -160,11 +170,12 @@ Re-run 2026-10-31 evening after all merges: graph 12.45 / 4 open, `/audit/verify
 | `BRAIN_URL` / `BRAIN_IP` | `10.215.200.40` (current Wi-Fi). Redo whenever the network changes, and on the event hotspot (then re-run `python -m sensors.demo_files`, because the decoy links use it) |
 | `IT_CHAT_ID` | **Set** (by Aaron, 2026-10-31) |
 | `POLL_SECONDS` | **10** (demo speed). Note: an editor save once reverted `.env` (POLL back to 30, honeytokens back to CHANGE-ME); restored and honeytokens regenerated. Close `.env` without saving before editing elsewhere |
-| `CHAT_LANGS` | **Empty.** Set e.g. `<owner chat id>:kn` to demo the Kannada alert and voice note |
-| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | **Empty** = templates only (works fine). Optional, last in Aradhya's order |
+| `CHAT_LANGS` | **Empty on purpose: English only** for now (team decision 2026-10-31). Hindi/Kannada templates stay unused |
+| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | **Set**: Groq, `openai/gpt-oss-20b` (reasoning model). Live test: 6/6 English alerts reworded in 0.9-2.0 s. Ransomware, agent-stopped and merged alerts are never reworded (`llm.NO_AI`) |
 | Windows Firewall | Inbound Allow for Python 3.13 (Private, Public); venv python uses the same interpreter |
 | `OWNER_CHAT_ID`, `STAFF_CHAT_IDS` | **Set** (owner = Aradhya, staff = Ayan, from the chats that messaged the bot). From now on every incident sends real Telegram messages to their phones. |
-| `VENDOR_CHAT_IDS` | **Empty.** No vendor chat has messaged the bot yet. Bruce or Aaron sends `/start`, then add `name:chat_id` |
+| `VENDOR_CHAT_IDS` | **Set** as `Nimbus Pharma:<chat id>` (format is `name:chat_id`; a bare number is read as empty) |
+| `AGENT_TOKEN` | **Set and live on both sides** (Aaron's brain + Ayan's agent, same value, shared privately). Checked: no token 401, wrong token 401, right token 200; Ayan's agent shows `(agent token on)` with no refusals |
 | `HONEY_TOKENS` | **Set**: two random 12-character tokens (decoy-doc, decoy-email). Brain restarted to load them |
 | `IT_CHAT_ID`, `CLINIC_NAME` | New, optional; not in `.env` (defaults: empty, "Sunrise Clinic") |
 
@@ -180,7 +191,7 @@ Re-run 2026-10-31 evening after all merges: graph 12.45 / 4 open, `/audit/verify
 ## 6. Per-person status (what each teammate still has to do)
 ### Bruce (A)
 Done: Google Cloud project `chakravyuh-demo`, OAuth client, first sign-in on the brain laptop works; 3 sensor reliability fixes pushed.
-Still needed: upload `demo_files/Patient records` (as a folder), the 3 invoices and `Netbanking login.pdf` to the clinic Drive, and send the decoy email from `demo_files/decoy_email.txt` (files generated by Aaron); 2-step login off on the clinic account (myaccount.google.com -> Security; cannot be done or checked through the API); hand rehearsal of forwarding + filter; honeytoken decoy doc/email; `sensors/reset_gmail.py` (Level 2 upgrade); SPF/DMARC check.
+Done: Drive demo data uploaded and decoy email sent (2026-10-31). Still needed: 2-step login off on the clinic account (myaccount.google.com -> Security; cannot be done or checked through the API); hand rehearsal of forwarding + filter; honeytoken decoy doc/email; `sensors/reset_gmail.py` (Level 2 upgrade); SPF/DMARC check.
 Checks he owns: hand-made filter -> event in one poll; `forwarding_added` while pending; Remove it -> `verified: true`; public share -> alert -> Make private; honeytoken in browser alerts, in Telegram does not.
 Reminders: 7-day token expiry in Testing mode (delete `token_basic.json` and sign in again on event morning); `POLL_SECONDS=10` for demo.
 
@@ -206,7 +217,7 @@ Done: sections 5.1-5.9. Still to do: section 8.
 3. **Written (2026-10-31):** process suspension and backup-age check are in `agent/agent.py`; not yet run on Linux.
 4. **Open:** the brain checks `by` only on `release_pc`; other actions are trusted from the bot (which enforces roles).
 5. **Accepted:** `confirm_with_owner` and `report` only tick off; the incident closes when all steps are tapped.
-6. **Written (2026-10-31):** agent token (`AGENT_TOKEN` + `X-Agent-Token`) checked on `/heartbeat`, `/agent/commands` and agent `/events`; off until both `.env` files set it.
+6. **DONE (2026-10-31):** agent token (`AGENT_TOKEN` + `X-Agent-Token`) checked on `/heartbeat`, `/agent/commands` and agent `/events`; switched on for Aaron's brain and Ayan's agent; refusals tested (401) and logged as `rejected_agent`.
 7. **Open:** `POLL_SECONDS=10` needed for the 45 s alert requirement.
 8. **Open:** Windows containment path (`netsh`) is untested; Linux is the recommended demo PC.
 9. **Open:** `python.exe` is in `SAFE` in `upgrades.py`, so suspension would skip the fake ransomware on a Windows PC.
@@ -233,12 +244,12 @@ Done: sections 5.1-5.9. Still to do: section 8.
 - [x] `credentials.json` + `token_basic.json` working on the brain laptop.
 - [x] Telegram token, team `SECURITY_CODE`, random `HMAC_SECRET`.
 - [x] `OWNER_CHAT_ID` (Aradhya) and `STAFF_CHAT_IDS` (Ayan) in `.env`.
-- [ ] `VENDOR_CHAT_IDS`: needs one person to `/start` the bot as the vendor.
+- [x] `VENDOR_CHAT_IDS` set (`Nimbus Pharma:<chat id>`).
 - [x] `IT_CHAT_ID` set.
 - [x] `BRAIN_URL` / `BRAIN_IP` = current IP (`10.215.200.40`); `POLL_SECONDS=10`.
 - [x] Random `HONEY_TOKENS` in `.env`.
 - [x] Demo files generated (`python -m sensors.demo_files`).
-- [ ] Upload them to the clinic Drive + send the decoy email (manual, about 2 min).
+- [x] Demo files uploaded to the clinic Drive (2 folders, 12 files, all private) and decoy email sent (2026-10-31).
 - [ ] 2-step login off on the clinic account (manual, Google account settings).
 - [x] Containment hand-test script written for Ayan.
 - [x] Ayan's agent installed and reporting to the brain (first live event 2026-10-31 12:24 UTC, see section 13).
@@ -256,12 +267,12 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] Prerequisites: `POLL_SECONDS=10`; current IP in `.env`; attacker forwarding address **accepted** in the clinic Gmail. (Delete `chakravyuh.db` before each run.)
 - [x] Detection half of item 1: Bruce's real filters reached the brain as `filter_added` and merged into the incident.
 - [x] A signed button tap from a real phone reached the brain (Ayan tapped "Okay" on the ransomware alert -> `ack` in the audit log).
-- [ ] Demo filter must also **skip the inbox**: the current invoice filter only forwards, so it scores **5** ("sends mail to another account" 3 + "invoice" 2). With "Skip the Inbox (Archive it)" ticked it scores **7**.
-- [ ] **1. Taps do real things (critical).** Not done yet: both of Bruce's filters are still in Gmail and no remove action is in the audit log. Bruce makes the invoice filter by hand -> `filter_added -> 200` -> console red, Risk 18.6 -> Aradhya's phone gets the alert -> she taps Remove it -> phone says "We checked: it's gone", filter gone from Gmail, path grey, `/audit/verify` ok. Code: `rm` -> `remove_filter` -> `delete_filter` (evidence, delete, re-read).
+- [x] Demo filter now **skips the inbox** (scored 7 in the 14:15 run). Was: the current invoice filter only forwards, so it scores **5** ("sends mail to another account" 3 + "invoice" 2). With "Skip the Inbox (Archive it)" ticked it scores **7**.
+- [x] **1. Taps do real things (critical). DONE 2026-10-31:** Aradhya tapped Remove it -> both attacker rules: evidence saved, deleted, re-read `verified: true`; Ayan's second tap on his copy hit Gmail's 404 and still reported removed. (Alert-time < 45 s still to be timed.) Bruce makes the invoice filter by hand -> `filter_added -> 200` -> console red, Risk 18.6 -> Aradhya's phone gets the alert -> she taps Remove it -> phone says "We checked: it's gone", filter gone from Gmail, path grey, `/audit/verify` ok. Code: `rm` -> `remove_filter` -> `delete_filter` (evidence, delete, re-read).
 - [ ] **2. Explanation buttons** on real phones: What does this mean? / Show me how / Call my IT helper (the last needs `IT_CHAT_ID`).
-- [ ] **3. Paisa Pause** on real phones: forward "our bank account has changed" -> "Don't pay yet" -> Check with the vendor -> vendor taps no -> owner sees "FAKE INVOICE" (needs `VENDOR_CHAT_IDS`).
-- [ ] **4. AI wording (optional, last).** Set `LLM_*` to any OpenAI-compatible endpoint; check the reworded alert keeps its button name and that LLM-off still works.
-- [ ] Kannada/Hindi demo chat via `CHAT_LANGS`; voice note plays.
+- [ ] **3. Paisa Pause** on real phones: forward "our bank account has changed" -> "Don't pay yet" -> Check with the vendor -> vendor taps no -> owner sees "FAKE INVOICE" (needs `VENDOR_CHAT_IDS`). New (Aradhya, `0f62ad5`): if the attacker's mail rule is still open, the FAKE INVOICE message also has a signed **Remove it** button; otherwise only Call my IT helper. Test this too.
+- [x] **4. AI wording:** Groq `gpt-oss-20b` set; reasoning-model support; safety-critical alerts never reworded (in testing the AI turned "cut the computer off" into "turned off her computer"); Markdown stripped for Telegram. Still to see on a real phone.
+- [x] Languages: English only for now (decision); `CHAT_LANGS` left empty.
 - [x] Onboarding baseline (Bruce's first-snapshot rule treats existing filters as normal).
 - [x] Venue baseline tool: `python -m eval.venue_baseline [--since <ISO time>]` reads the audit log (read-only, safe while the brain runs) and prints alerts/asks per hour.
 - [ ] Venue benign baseline measured: run brain + sensors during normal use only (no tests), then run the tool with `--since` the start time.
@@ -270,6 +281,7 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] Agent -> brain with Ayan (dry run): fake ransomware fired on decoy + entropy (2 of 3), incident #1 critical.
 - [x] Agent stopped -> `heartbeat_missing` after 16 s, merged into the same incident (< 20 s target met).
 - [x] Email + PC merge on live data: two real `filter_added` events joined incident #1 (PC first, then email).
+- [x] Agent token on (brain + Ayan's agent): forged / wrong-token calls refused (401), real agent accepted.
 - [ ] Real containment: `DRY_RUN=0` on Ayan's PC, google blocked, brain still reachable, contained < 10 s, still heartbeating.
 - [x] Owner Release tap from a real phone reaches the brain (`release_pc` by Aradhya's chat, audit row 10; PC edges cleared). Dry run, so nothing was really cut off.
 - [ ] Owner taps Release with `DRY_RUN=0` -> PC back online in 3-5 s.
@@ -328,4 +340,17 @@ Read from that run's audit log (`chakravyuh.db`, chain `{"ok": true}`, 9 rows):
 | 10 | `release_pc` by Aradhya's chat (owner) | Owner-only Release tap works from a real phone |
 
 Not covered by this run: Remove it (both filters still in Gmail), the other owner steps, real containment.
-Gmail now: forwarding address **accepted**; 2 filters: `invoice` -> forward (scores 5; add "skip inbox" for 7) and `from:no-reply@accounts.google.com` -> Trash (scores 4, "ask"). Drive: still empty.
+Gmail now: forwarding address **accepted**; 2 filters: `invoice` -> forward (scores 5; add "skip inbox" for 7) and `from:no-reply@accounts.google.com` -> Trash (scores 4, "ask"). Drive: demo data uploaded (2 folders, 12 files, private).
+
+### 2026-10-31, 14:15 UTC (19:45 IST): Remove it on a real phone
+Audit log (`chakravyuh.db`, 14 rows, chain `{"ok": true}`):
+
+| Row | What happened | Shows |
+| --- | --- | --- |
+| 1-4 | Bruce's two `filter_added` (14:15:01, 14:15:53): `invoice` -> forward (score 5), then `invoice` -> forward + skip inbox (**score 7**), one incident | Demo filter scores 7 |
+| 5-9 | `remove_filter` by Aradhya (owner): for each rule `evidence` saved, `delete_filter`, re-read -> `verified: true` | **Gate 1 core: a tap deletes the real rule and checks it is gone** |
+| 6-14 | `remove_filter` by Ayan (staff) on his copy: Gmail 404 treated as already removed, `verified: true` | Double taps are harmless (Bruce's 404 fix) |
+
+The IT helper also received the technical details message for incident #1. Gmail afterwards: 0 filters; forwarding address still accepted (kept so the demo can be rerun).
+Note: both owner and staff can tap Remove it; the first tap does the work, the second is a harmless no-op.
+

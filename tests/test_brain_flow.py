@@ -34,6 +34,13 @@ def test_merged_remove_step_deletes_filter_and_greys_paths(client):
     gmail_edges = [e for e in client.get("/graph").json()["edges"] if e["data"]["source"] in ("attacker", "gmail") and e["data"]["target"] in ("gmail", "invoices")]
     assert gmail_edges and not any(e["data"]["live"] for e in gmail_edges)
 
+def test_honeytoken_lights_the_path_where_the_decoy_lives(client):
+    live = lambda: {(e["data"]["source"], e["data"]["target"]) for e in client.get("/graph").json()["edges"] if e["data"]["live"]}
+    _event(client, "honeytoken_hit", "honeytoken:t1", {"planted_in": "decoy-doc"})
+    assert ("attacker", "drive") in live() and ("attacker", "gmail") not in live()
+    _event(client, "honeytoken_hit", "honeytoken:t2", {"planted_in": "decoy-email"})
+    assert ("attacker", "gmail") in live()
+
 def test_merged_incident_next_step_is_confirm_with_owner(client):
     _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
     inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
@@ -77,6 +84,7 @@ def test_old_backup_stays_its_own_incident(client):
 def test_restore_is_owner_only_and_queues_the_agent(client, monkeypatch):
     monkeypatch.setattr(A, "OWNER_CHAT_ID", "111")
     monkeypatch.setattr(A, "agent_commands", {})
+    monkeypatch.setattr(A, "AGENT_TOKEN", "")              # independent of the token in .env
     inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
     assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "222"}).status_code == 403
     assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "111"}).json()["queued"]
