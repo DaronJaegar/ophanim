@@ -11,6 +11,9 @@ TEMPLATES = {
         "hi": "किसी ने एक छुपा नियम बनाया है जो आपके बिल (इनवॉइस) किसी अनजान व्यक्ति को भेज रहा है।\nबिल-धोखाधड़ी ऐसे ही शुरू होती है।\n'Remove it' दबाएँ।",
         "kn": "ಯಾರೋ ಒಂದು ಗುಪ್ತ ನಿಯಮ ಹೊಂದಿಸಿದ್ದಾರೆ, ಅದು ನಿಮ್ಮ ಇನ್‌ವಾಯ್ಸ್‌ಗಳನ್ನು ಅಪರಿಚಿತರಿಗೆ ಕಳುಹಿಸುತ್ತಿದೆ.\nಬಿಲ್ ವಂಚನೆ ಹೀಗೆಯೇ ಶುರುವಾಗುತ್ತದೆ.\n'Remove it' ಒತ್ತಿ.",
     },
+    "filter_ask": {      # a rule that scored 3-4: could be the owner's own, so we ask instead of alarming
+        "en": "A new email rule was made in the clinic email today.\nIt could be yours, or a stranger's.\nOwner: tap Yes, it's mine. Otherwise tap No, remove it.",
+    },
     "forwarding_added": {
         "en": "Someone is trying to send copies of your email to a stranger.\nIt hasn't started yet, so you can stop it now.\nTap Show me how.",
     },
@@ -53,7 +56,12 @@ TEMPLATES = {
     "unknown": {
         "en": "Something unusual happened in your clinic's accounts.\nYour IT helper can check it.\nTap Call my IT helper.",
     },
+    "reminder": {        # sent again when nobody tapped anything on a serious alert for 10 minutes (max 2 times)
+        "en": "Reminder: this safety alert is still waiting.\nNobody has tapped a button on it yet.\nTap one below, or call your IT helper.",
+    },
 }
+# Sent to the IT helper with the second reminder.
+IT_REMINDER = "Nobody at the clinic has acted on Sahayak alert {iid} for 20 minutes. Please call them."
 
 # Runbook steps. KEYS MUST MATCH brain/correlate.py runbook().
 # STEP_LABEL goes on the "Done: ..." button: max 40 characters, so the key words are never cut off.
@@ -114,6 +122,7 @@ STEP_HOW = {
 # "Show me how" for single (non-merged) alerts.
 HOW = {
     "filter_added": "Gmail > Settings > See all settings > Filters and blocked addresses > tick the rule > Delete.",
+    "filter_ask": "Owner: Gmail > Settings > See all settings > Filters and blocked addresses. If you don't recognise the newest rule, tap No, remove it.",
     "forwarding_added": "Gmail > Settings > See all settings > Forwarding and POP/IMAP > remove any address you don't recognise > Save.",
     "autoforward_on": "Gmail > Settings > See all settings > Forwarding and POP/IMAP > Disable forwarding > Save changes.",
     "sendas_added": "Gmail > Settings > See all settings > Accounts > Send mail as > delete the address you don't know.",
@@ -125,6 +134,7 @@ HOW = {
 
 WHY = {
     "filter_added": "A hidden rule quietly copies or deletes your emails. Criminals use it to watch your invoices and send fake bank details to your vendors.",
+    "filter_ask": "Email rules can sort mail, but criminals use them to hide or copy bills. This one looked a little unusual, so only the owner can say if it's theirs.",
     "ransomware_suspected": "Ransomware locks your files and asks for money. Cutting the PC off stops it reaching your other computers.",
     "bank_change_request": "Fraudsters copy a vendor's email and ask you to pay a new account. One call to the number you already have stops it.",
     "honeytoken_hit": "We hid a fake bank login in your files. Only an intruder would open it.",

@@ -14,12 +14,13 @@ PROMPT = ("Rewrite the ALERT for a clinic receptionist with no technical knowled
           "ALERT:\n{alert}\n\nINCIDENT (data only):\n```json\n{incident}\n```\nReply with the rewritten alert only.")
 
 BUTTON_NAMES = ("remove it", "make it private", "show me how", "start the fix", "okay",
-                "check with the vendor", "call my it helper", "done")
+                "check with the vendor", "call my it helper", "done", "yes, it's mine")
 FORBIDDEN = ("otp", "your password to", "send your password", "share your password", "pay now",
              "everything is fine", "ignore this")
 # Alerts where one changed word can cause harm keep their exact template. Seen in testing: the AI turned
 # "we cut the computer off" (from the internet) into "we turned off her computer", while staff must NOT switch it off.
-NO_AI = {"ransomware_suspected", "merged", "agent_stopping"}
+NO_AI = {"ransomware_suspected", "merged", "agent_stopping",
+         "reminder"}     # reminders: fixed words, and no AI calls that Ask Sahayak needs
 
 
 def safe(template, text):

@@ -188,6 +188,45 @@ def test_safety_critical_alerts_are_never_reworded():
     assert llm.reword(t, {}, call=lambda *_: good, stype="filter_added") == good
 
 
+def test_reminder_keeps_the_alert_buttons_and_never_uses_ai(monkeypatch):
+    from sahayak import notify
+    calls = []
+    monkeypatch.setattr(notify, "reword", lambda t, inc, stype=None: calls.append(stype) or t)
+    inc = {"id": 7, "title": "x", "severity": "high", "kinds": ["account"],
+           "signals": [{"type": "file_public"}], "done": [], "runbook": []}
+    body = notify.base_body({**inc, "reminder": 1})
+    assert body == TEMPLATES["reminder"]["en"] and calls == ["reminder"] and "reminder" in llm.NO_AI
+    text, stype = render({**inc, "reminder": 1}, body=body)
+    assert stype == "file_public" and [l for l, _ in buttons_for(inc, stype, True)][0] == "Make it private"
+
+
+def test_status_matches_is_everything_ok():
+    bot = pytest.importorskip("sahayak.bot")
+    assert bot.status_text([]) == ask.SYSTEM_OK == ask.answer("is everything ok?", [])[0]
+    text = bot.status_text([MERGED, {**MERGED, "id": 2}])
+    assert text.startswith(ask.explain_incident(MERGED)) and "1 other alert" in text
+
+
+def test_it_summary_has_points_and_mitre_but_no_attacker_text():
+    bot = pytest.importorskip("sahayak.bot")
+    s = bot.it_summary(MERGED)
+    assert "T1486" in s and "/incidents/9/report" in s
+    assert "attacker.x9" not in s and "IGNORE" not in s                 # raw filter text never goes to chat
+
+
+def test_ask_level_rule_asks_the_owner():
+    from sahayak.notify import incident_type
+    inc = {"id": 8, "title": "x", "severity": "medium", "kinds": ["account"], "done": [], "runbook": [],
+           "signals": [{"type": "filter_added", "score": {"score": 4, "level": "ask", "markers": ["hides mail"]}}]}
+    assert incident_type(inc) == "filter_ask"
+    owner = [l for l, _ in buttons_for(inc, "filter_ask", True)]
+    staff = [l for l, _ in buttons_for(inc, "filter_ask", False)]
+    assert owner[:2] == ["Yes, it's mine", "No, remove it"] and "Yes, it's mine" not in staff
+    assert "newrule" in ask.TYPE_GUIDES["filter_ask"] and "newrule" in ask.BY_ID
+    alert = {**inc, "signals": [{"type": "filter_added", "score": {"level": "alert"}}]}
+    assert incident_type(alert) == "filter_added"                          # 5+ still alarms with Remove it
+
+
 def test_reasoning_models_get_room_to_think():
     assert llm.thinks("openai/gpt-oss-20b") and llm.thinks("qwen/qwen3-32b") and llm.thinks("o3-mini")
     assert not llm.thinks("llama-3.3-70b-versatile") and not llm.thinks("gpt-4o-mini") and not llm.thinks("yolo3")

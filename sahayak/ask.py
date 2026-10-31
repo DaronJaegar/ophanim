@@ -61,7 +61,7 @@ MENU_TOPICS = {"1": "someone asks for otp password", "2": "bill bank details cha
 
 # Which guides belong to which alert, so questions during an alert find the right help first.
 TYPE_GUIDES = {
-    "filter_added": ["rule"], "forwarding_added": ["forward"], "autoforward_on": ["forward"],
+    "filter_added": ["rule"], "filter_ask": ["newrule", "rule"], "forwarding_added": ["forward"], "autoforward_on": ["forward"],
     "sendas_added": ["sendas"], "file_public": ["public"], "honeytoken_hit": ["decoy"],
     "ransomware_suspected": ["locked", "offline"], "heartbeat_missing": ["stopped"],
     "agent_stopping": ["stopped"], "backup_old": ["backup"], "bank_change_request": ["bill"],

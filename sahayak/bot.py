@@ -1,7 +1,7 @@
 """Sahayak bot (Aradhya, Module D): receives taps and messages from staff.
 Run ONE copy only:  python -m sahayak.bot
 """
-import asyncio, json, re, requests
+import asyncio, re, requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR_CHAT_IDS, BRAIN_URL,
@@ -14,16 +14,19 @@ from sahayak.notify import header, incident_type
 ALLOWED = {c for c in [OWNER_CHAT_ID] + STAFF_CHAT_IDS if c}
 VENDOR_CHATS = set(VENDOR_CHAT_IDS.values())
 VENDOR_CODES = {"vy", "vn"}
-OWNER_ONLY = {"rel", "rs"}
-ACTIONS = {"rm": "remove_filter", "mp": "make_private", "rel": "release_pc", "rs": "restore_files"}
+OWNER_ONLY = {"rel", "rs", "mine"}
+ACTIONS = {"rm": "remove_filter", "mp": "make_private", "rel": "release_pc", "rs": "restore_files",
+           "mine": "rule_is_mine"}
 DONE_TEXT = {        # code -> (worked, didn't work)
     "rm": ("We checked: it's gone.", "We couldn't remove it automatically. Tap Show me how, or call your IT helper."),
     "mp": ("We checked: only your clinic can open it now.", "We couldn't change it automatically. Your IT helper has the details."),
     "rel": ("The PC is being reconnected.", "The PC is still cut off. Your IT helper has the details."),
     "rs": ("We're putting the files back from the backup. It takes about a minute.",
            "We couldn't start putting the files back. Your IT helper has the details."),
+    "mine": ("We'll leave your rule alone and won't ask about it again.",
+             "We couldn't save your answer. Your IT helper has the details."),
 }
-SUCCESS = {"rm": "removed", "mp": "made_private", "rel": "ok", "rs": "queued"}
+SUCCESS = {"rm": "removed", "mp": "made_private", "rel": "ok", "rs": "queued", "mine": "confirmed"}
 PAISA_ENTITY = "vendor:payment"   # its own entity, so Paisa Pause never merges into the email/PC incident
 BANK_CHANGE = re.compile(r"(bank|account|a/c|ifsc|upi).{0,40}(chang|new|updat)|"
                          r"(chang|new|updat).{0,40}(bank|account|a/c|ifsc|upi)", re.I | re.S)
@@ -90,13 +93,20 @@ def fake_invoice_followup(incs, paisa_iid):
     return text, [("Call my IT helper", signing.make(paisa_iid, "it"))]
 
 
+def it_summary(inc):
+    """The IT helper's view: markers, points and MITRE from our own fields (ask.explain_incident), never raw
+    filter text or addresses (attacker-written). The full evidence is in the brain's report page."""
+    if not inc.get("signals"):
+        return f"Alert {inc.get('id', '?')}: the details could not be loaded. Check {BRAIN_URL}/console"
+    return (ask.explain_incident(inc, mode="it") +
+            f"\n\nFull report with the evidence: {BRAIN_URL}/incidents/{inc.get('id')}/report")
+
+
 async def send_to_it(ctx, inc):
     """The technical view goes to the IT helper (jargon allowed here). Returns True if sent."""
     if not IT_CHAT_ID:
         return False
-    keys = ("id", "title", "severity", "status", "kinds", "entities", "signals", "runbook", "done")
-    details = json.dumps({k: inc.get(k) for k in keys}, indent=1, ensure_ascii=False, default=str)
-    await ctx.bot.send_message(IT_CHAT_ID, f"{header()} · technical details for the IT helper\n{details[:3800]}")
+    await ctx.bot.send_message(IT_CHAT_ID, f"{header()} · technical details for the IT helper\n{it_summary(inc)[:3800]}")
     return True
 
 
@@ -177,6 +187,7 @@ async def handle(q, ctx, cid, iid, code):
         await q.message.reply_text(WHY.get(incident_type(inc) if inc else "", WHY["_default"]))
 
     elif code == "it":
+        await brain("/actions", {"incident_id": iid, "action": "called_it_helper", "by": cid})   # stops reminders
         inc = await get_incident(iid) or {"id": iid}
         if await send_to_it(ctx, inc):
             await q.message.reply_text("We've sent your IT helper the details. They'll call you.")
@@ -188,6 +199,7 @@ async def handle(q, ctx, cid, iid, code):
         await q.edit_message_text(q.message.text + "\n\n" + ACK_TEXT)
 
     elif code == "vv":                                            # Paisa Pause: ask the vendor
+        await brain("/actions", {"incident_id": iid, "action": "asked_vendor", "by": cid})       # stops reminders
         if not VENDOR_CHAT_IDS:
             await q.message.reply_text("Don't pay. Call the vendor on the number you already have, "
                                        "not the one in the message."); return
@@ -271,6 +283,50 @@ async def ask_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await reply_ask(update, ctx, question)
 
 
+def status_text(incs, mode="staff"):
+    """/status gives the same answer as asking "is everything ok?" (ask.open_incident / SYSTEM_OK)."""
+    live = ask.open_incident(incs)
+    if not live:
+        return ask.SYSTEM_OK
+    others = sum(1 for i in incs if i.get("status") == "open") - 1
+    more = f"\n\n{others} other alert(s) are also open." if others > 0 else ""
+    return ask.explain_incident(live, mode) + more
+
+
+async def status_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    cid = str(update.effective_chat.id)
+    if cid not in ALLOWED and not (IT_CHAT_ID and cid == IT_CHAT_ID):
+        return
+    try:
+        incs = await asyncio.to_thread(lambda: requests.get(BRAIN_URL + "/incidents", timeout=5).json())
+    except (requests.RequestException, ValueError):
+        await update.message.reply_text(NO_BRAIN); return
+    mode = "it" if IT_CHAT_ID and cid == IT_CHAT_ID else "staff"
+    await update.message.reply_text(f"{header()}\n{status_text(incs, mode)}"[:4000])
+
+
+def digest_text(d):
+    """/digest: small email rule changes that did not need an alert. Counts and our own labels only."""
+    n = d.get("count", 0)
+    if not n:
+        return "No small email rule changes since the safety check started. Nothing to look at."
+    lines = [f"{n} small email rule change(s) looked normal, so we didn't send an alert.",
+             "What we noticed:"] + [f"• {m}: {c}" for m, c in sorted(d.get("by_marker", {}).items())]
+    lines.append("If nobody at the clinic made new email rules, tap /status or call your IT helper.")
+    return "\n".join(lines)
+
+
+async def digest_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    cid = str(update.effective_chat.id)
+    if cid not in ALLOWED and not (IT_CHAT_ID and cid == IT_CHAT_ID):
+        return
+    try:
+        d = await asyncio.to_thread(lambda: requests.get(BRAIN_URL + "/digest", timeout=5).json())
+    except (requests.RequestException, ValueError):
+        await update.message.reply_text(NO_BRAIN); return
+    await update.message.reply_text(f"{header()}\n{digest_text(d)}")
+
+
 async def help_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"{header()}\n{HELP_TEXT}")
 
@@ -308,6 +364,8 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask_command))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("status", status_command))
+    app.add_handler(CommandHandler("digest", digest_command))
     app.add_handler(CallbackQueryHandler(on_button))
     app.add_handler(MessageHandler((filters.TEXT & ~filters.COMMAND) | filters.PHOTO, on_text))
     print(f"Sahayak running. owner={OWNER_CHAT_ID or '-'} staff={STAFF_CHAT_IDS} "

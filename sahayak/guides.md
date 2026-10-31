@@ -82,6 +82,16 @@ Or in Gmail: Settings > See all settings > Filters and blocked addresses > tick 
 4. Tick the rule you don't recognise and click Delete.
 5. Then change the email password from your phone and sign out other devices.
 
+## newrule | A new email rule: is it the owner's?
+keywords: new rule, new email rule, did you make it, is it mine, yes it's mine, my rule, owner made, sorting rule, label rule, newsletter rule, ask owner, not sure
+A new rule was made in the clinic email. It looked a little unusual, so we're asking before we act.
+Only the owner knows if they made it. If they did, they tap Yes, it's mine and we won't ask again.
+If nobody at the clinic made it, tap No, remove it. We save a copy as proof, then delete it.
+1. Ask the owner if they made a new email rule today.
+2. If yes, the owner taps Yes, it's mine on the Sahayak message.
+3. If nobody made it, tap No, remove it.
+4. If you're not sure, tap Call my IT helper.
+
 ## forward | Email is being copied to a stranger
 keywords: forwarding, forward, copy, copies, auto forward, email copied, stranger, address, gmail settings, all email
 Someone set the clinic email to send copies of mail to another address.

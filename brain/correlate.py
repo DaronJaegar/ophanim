@@ -66,6 +66,23 @@ class Incidents:
         self.items[iid] = inc
         return inc, False
 
+    def drop_signals(self, inc, gone):
+        """Remove the signals gone(signal) is true for (e.g. a rule the owner says is theirs). Never closes an
+        incident that still has other signals: an email rule confirmed as the owner's must not close a merged
+        ransomware incident. Kinds and runbook are rebuilt from what is left; done steps are kept."""
+        keep = [s for s in inc["signals"] if not gone(s)]
+        if len(keep) == len(inc["signals"]):
+            return False
+        inc["signals"] = keep
+        if not keep:
+            inc["status"] = "closed"
+            return True
+        inc["kinds"] = {self._kind(s["entity"]) for s in keep}
+        inc["runbook"] = runbook(inc["kinds"])
+        if set(inc["runbook"]) <= set(inc["done"]):
+            inc["status"] = "closed"
+        return True
+
     def public(self, inc):
         return {k: (sorted(v) if isinstance(v, set) else (v.isoformat() if isinstance(v, datetime) else v))
                 for k, v in inc.items()}

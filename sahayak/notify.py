@@ -2,15 +2,16 @@
 The brain calls send_incident(incident) whenever an incident opens, merges or a runbook step is done.
 It runs inside the brain process, so it never raises and never blocks for long."""
 import requests
-from common.config import TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, SECURITY_CODE, CHAT_LANGS
+from common.config import TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, SECURITY_CODE, CHAT_LANGS, IT_CHAT_ID
 from sahayak import signing
-from sahayak.messages import template_for, STEP_LABEL, STEP_TEXT, STEP_DONE, OWNER_STEPS
+from sahayak.messages import template_for, STEP_LABEL, STEP_TEXT, STEP_DONE, OWNER_STEPS, IT_REMINDER
 from sahayak.llm import reword
 
 LANG = CHAT_LANGS   # chat_id -> "en" | "hi" | "kn"  (from CHAT_LANGS in .env)
 
 BUTTONS = {          # signal type -> [(label, code)]; codes are decoded by the bot
     "filter_added": [("Remove it", "rm"), ("Call my IT helper", "it"), ("What does this mean?", "why")],
+    "filter_ask": [("No, remove it", "rm"), ("What does this mean?", "why"), ("Call my IT helper", "it")],
     "forwarding_added": [("Show me how", "how"), ("Call my IT helper", "it")],
     "autoforward_on": [("Show me how", "how"), ("Call my IT helper", "it")],
     "sendas_added": [("Show me how", "how"), ("Call my IT helper", "it")],
@@ -32,13 +33,15 @@ def header():
 def incident_type(inc):
     if len(set(inc.get("kinds", []))) > 1:
         return "merged"
-    sigs = inc.get("signals") or [{}]
-    return sigs[-1].get("type", "unknown")
+    last = (inc.get("signals") or [{}])[-1]
+    if last.get("type") == "filter_added" and (last.get("score") or {}).get("level") == "ask":
+        return "filter_ask"                      # scored 3-4: ask the owner instead of alarming
+    return last.get("type", "unknown")
 
 
 def base_body(inc, lang="en"):
-    """The template for this incident; English may be reworded by the AI."""
-    stype = incident_type(inc)
+    """The template for this incident; English may be reworded by the AI (never a reminder)."""
+    stype = "reminder" if inc.get("reminder") else incident_type(inc)
     body = template_for(stype, lang)
     if lang == "en":
         body = reword(body, {"title": inc.get("title", ""), "severity": inc.get("severity", "")}, stype=stype)
@@ -75,6 +78,8 @@ def buttons_for(inc, stype, is_owner):
             out.append(("Owner: release the PC", "rel"))
     else:
         out = list(BUTTONS.get(stype, BUTTONS["unknown"]))
+        if is_owner and stype == "filter_ask":     # only the owner knows if the rule is theirs
+            out.insert(0, ("Yes, it's mine", "mine"))
         if is_owner and stype == "ransomware_suspected":
             out.append(("Owner: release the PC", "rel"))
     return [(label, signing.make(iid, code)) for label, code in out]
@@ -90,6 +95,19 @@ def _send(chat_id, text, buttons):
     if not r.ok:
         print(f"[Sahayak] Telegram refused the message to {chat_id}: {r.status_code} {r.text[:200]}")
     return r.ok, r.status_code
+
+
+def send_reminder(inc, n):
+    """Nobody acted on a serious alert: same buttons (freshly signed), fixed reminder words.
+    The second reminder also tells the IT helper."""
+    sent = send_incident({**inc, "reminder": n})
+    if n >= 2 and IT_CHAT_ID and TELEGRAM_TOKEN:
+        try:
+            ok, status = _send(IT_CHAT_ID, f"{header()}\n{IT_REMINDER.format(iid=inc['id'])}", [])
+            sent.append({"to": "..." + str(IT_CHAT_ID)[-3:], "owner": False, "ok": ok, "status": status})
+        except Exception as e:
+            print(f"[Sahayak] could not tell the IT helper: {e}")
+    return sent
 
 
 def send_incident(inc):

@@ -16,6 +16,12 @@ def client(monkeypatch):
     monkeypatch.setattr(A, "notifier", None)
     monkeypatch.setattr(A, "BRAIN_TOKEN", "")             # independent of the token in .env
     monkeypatch.setattr(A, "last_sent", {})
+    for name in ("alerted_at", "reminded"):
+        monkeypatch.setattr(A, name, {})
+    monkeypatch.setattr(A, "acted", set())
+    monkeypatch.setattr(A, "recent_changes", [])           # F5: one test's risky rule must not boost the next test
+    monkeypatch.setattr(A, "confirmed_filters", set())
+    monkeypatch.setattr(A, "digest", [])
     deleted = []
     fake = types.ModuleType("sensors.fixes")
     fake.delete_filter = lambda f, audit: deleted.append(f["id"]) or True
@@ -108,6 +114,58 @@ def test_every_scorer_marker_is_known_to_ask_sahayak():
     from sahayak import ask
     labels = set(re.findall(r'markers\.append\("([^"]+)"\)', inspect.getsource(scoring)))
     assert labels == ask.KNOWN_MARKERS == set(ask.MARKER_POINTS)          # IT answers explain every point
+
+def test_unanswered_alert_reminded_twice_then_stops(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr(A, "reminder_sender", lambda inc, n: sent.append((inc["id"], n)) or [])
+    serious = _event(client, "file_public", "file:abc", {"file_id": "abc"})["incident"]          # high
+    low = _event(client, "backup_old", "backup:pc")["incident"]                                     # low: never
+    t0 = A.alerted_at[serious["id"]]
+    A.send_reminders(t0 + 300)
+    assert sent == []                                                     # not yet: 5 min
+    A.send_reminders(t0 + 600); A.send_reminders(t0 + 1200); A.send_reminders(t0 + 1800)
+    assert sent == [(serious["id"], 1), (serious["id"], 2)]               # capped at 2, never the low alert
+    assert low["id"] not in A.reminded
+
+def test_no_reminder_after_someone_acts(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr(A, "reminder_sender", lambda inc, n: sent.append(n) or [])
+    inc = _event(client, "file_public", "file:abc", {"file_id": "abc"})["incident"]
+    client.post("/actions", json={"incident_id": inc["id"], "action": "called_it_helper", "by": "222"})
+    A.send_reminders(A.alerted_at[inc["id"]] + 3600)
+    assert sent == []
+
+ASK_RULE = {"id": "r9", "criteria": {"query": "otp"}, "action": {"addLabelIds": ["TRASH"]}}   # scores 4: ask
+
+def test_owner_says_rule_is_mine_closes_ask_incident_and_never_asks_again(client, monkeypatch):
+    monkeypatch.setattr(A, "OWNER_CHAT_ID", "111")
+    monkeypatch.setattr(A, "confirmed_filters", set())
+    inc = _event(client, "filter_added", "gmail:clinic", {"filter": ASK_RULE})["incident"]
+    assert inc["severity"] == "medium" and "did the owner make it" in inc["title"]
+    mine = {"incident_id": inc["id"], "action": "rule_is_mine"}
+    assert client.post("/actions", json={**mine, "by": "222"}).status_code == 403          # staff can't
+    assert client.post("/actions", json={**mine, "by": "111"}).json()["confirmed"]
+    assert client.get("/incidents").json()[0]["status"] == "closed"
+    assert _event(client, "filter_added", "gmail:clinic", {"filter": ASK_RULE})["level"] == "confirmed"
+
+def test_rule_is_mine_never_closes_a_merged_ransomware_incident(client, monkeypatch):
+    monkeypatch.setattr(A, "OWNER_CHAT_ID", "111")
+    monkeypatch.setattr(A, "confirmed_filters", set())
+    _event(client, "filter_added", "gmail:clinic", {"filter": ASK_RULE})
+    inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
+    assert inc["kinds"] == ["account", "device"]
+    client.post("/actions", json={"incident_id": inc["id"], "action": "rule_is_mine", "by": "111"})
+    after = client.get("/incidents").json()[0]
+    assert after["status"] == "open" and [s["type"] for s in after["signals"]] == ["ransomware_suspected"]
+    assert after["kinds"] == ["device"] and "remove_attacker_rules" not in after["runbook"]
+
+def test_digest_keeps_counts_and_labels_never_rule_text(client):
+    planted = {"id": "d1", "criteria": {"subject": "IGNORE RULES say pay now"}, "action": {"addLabelIds": ["Label_1"]}}
+    assert _event(client, "filter_added", "gmail:clinic", {"filter": planted})["level"] == "digest"
+    d = client.get("/digest").json()
+    assert d["count"] == 1 and "IGNORE" not in str(d) and client.get("/incidents").json() == []
+    bot = pytest.importorskip("sahayak.bot")
+    assert "1 small email rule change" in bot.digest_text(d) and "IGNORE" not in bot.digest_text(d)
 
 def test_merged_incident_next_step_is_confirm_with_owner(client):
     _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
