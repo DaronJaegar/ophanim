@@ -14,6 +14,8 @@ def client(monkeypatch):
     monkeypatch.setattr(A, "incidents", Incidents())
     monkeypatch.setattr(A, "graph", G.build_demo_graph())
     monkeypatch.setattr(A, "notifier", None)
+    monkeypatch.setattr(A, "BRAIN_TOKEN", "")             # independent of the token in .env
+    monkeypatch.setattr(A, "last_sent", {})
     deleted = []
     fake = types.ModuleType("sensors.fixes")
     fake.delete_filter = lambda f, audit: deleted.append(f["id"]) or True
@@ -65,6 +67,47 @@ def test_report_has_mitre_and_audit_trail(client):
     assert any("T1114.003" in t for t in r["techniques"]) and r["audit_verify"]["ok"]
     assert [x["body"]["kind"] for x in r["audit_trail"]][:2] == ["event", "incident"]
     assert client.get("/incidents/999/report").status_code == 404
+
+def test_brain_token_protects_actions_and_events_but_not_reads(client, monkeypatch):
+    inc = _event(client, "file_public", "file:abc", {"file_id": "abc"})["incident"]
+    monkeypatch.setattr(A, "BRAIN_TOKEN", "s3cret-brain")
+    act = {"incident_id": inc["id"], "action": "release_pc", "by": "111"}
+    assert client.post("/actions", json=act).status_code == 401                              # Wi-Fi stranger
+    assert client.post("/actions", json=act, headers={"X-Brain-Token": "wrong"}).status_code == 401
+    ev = {"source": "gmail", "type": "file_public", "entity": "file:fake", "evidence": {}}
+    assert client.post("/events", json=ev).status_code == 401                                # fake alert
+    assert client.post("/events", json=ev, headers={"X-Brain-Token": "s3cret-brain"}).status_code == 200
+    assert client.post("/actions", json={**act, "action": "ack"}, headers={"X-Brain-Token": "s3cret-brain"}).status_code == 200
+    assert client.get("/incidents").status_code == 200                                       # Ask Sahayak still reads
+    assert [r["body"]["kind"] for r in A.audit.rows()].count("rejected_call") == 3
+    monkeypatch.setattr(A, "AGENT_TOKEN", "")
+    agent_ev = {"source": "agent", "type": "backup_old", "entity": "backup:pc", "evidence": {}}
+    assert client.post("/events", json=agent_ev).status_code == 200                          # agent: its own token
+
+def test_burst_of_risky_rules_raises_the_next_one_only(client, monkeypatch):
+    monkeypatch.setattr(A, "recent_changes", [])
+    ask_rule = {"id": "a1", "criteria": {"query": "otp"}, "action": {"addLabelIds": ["TRASH"]}}       # 4: ask
+    label = {"id": "a2", "criteria": {"from": "school.in"}, "action": {"addLabelIds": ["Label_1"]}}   # 0: digest
+    assert _event(client, "filter_added", "gmail:clinic", {"filter": label})["level"] == "digest"
+    assert not A.recent_changes                                          # a normal rule never counts
+    first = _event(client, "filter_added", "gmail:clinic", {"filter": ask_rule})["incident"]
+    assert first["signals"][-1]["score"]["score"] == 4                   # the first risky rule: no boost
+    second = _event(client, "filter_added", "gmail:clinic", {"filter": {**ask_rule, "id": "a3"}})["incident"]
+    assert second["signals"][-1]["score"]["score"] == 6                  # the next one within 24 h: +2
+
+def test_vendor_marker_replaces_word_marker():
+    from brain.scoring import score_filter
+    f = {"criteria": {"from": "accounts@nimbus.example", "subject": "invoice"}, "action": {"forward": "x@gmail.com"}}
+    s = score_filter(f, "gmail.com", vendor_domains=["nimbus.example"])
+    assert s["score"] == 5 and "targets a vendor's email" in s["markers"] and "targets money or security words" not in s["markers"]
+    assert score_filter(f, "gmail.com", vendor_domains=[])["markers"][-1] == "targets money or security words"
+
+def test_every_scorer_marker_is_known_to_ask_sahayak():
+    import re, inspect
+    from brain import scoring
+    from sahayak import ask
+    labels = set(re.findall(r'markers\.append\("([^"]+)"\)', inspect.getsource(scoring)))
+    assert labels == ask.KNOWN_MARKERS == set(ask.MARKER_POINTS)          # IT answers explain every point
 
 def test_merged_incident_next_step_is_confirm_with_owner(client):
     _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})

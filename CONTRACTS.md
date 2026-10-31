@@ -29,7 +29,13 @@ Unknown types return `{"ok": true, "ignored": <type>}`. A `filter_added` that sc
 - `POST /heartbeat` `{device}` every 5 s; 15 s of silence raises `heartbeat_missing`.
 - `GET /agent/commands?device=` returns and clears `{"commands": ["release" | "contain" | "restore"]}`.
 - **Agent token:** when `AGENT_TOKEN` is set on the brain, `/heartbeat`, `/agent/commands` and every `/events` call with `source: "agent"` need the header `X-Agent-Token: <same value>`; otherwise 401 and a `rejected_agent` audit row. Sensors and Sahayak are not affected.
+- **Brain token:** when `BRAIN_TOKEN` is set, `POST /actions` and every `POST /events` with a source other than `agent` need the header `X-Brain-Token: <same value>` (use `common.config.brain_headers()`); otherwise 401 and a `rejected_call` audit row. Reads (`GET /incidents` etc.) stay open, so Ask Sahayak keeps its alert context. The honeytoken route posts internally and is not affected.
 - `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, `GET /t/<token>`.
+- `GET /mitre` (signal type -> MITRE technique, one map: `sahayak/ask.TECHNIQUE`); `GET /incidents/<id>/report` (incident, techniques, audit trail, verify). The report holds attacker-written evidence: for people only, never for Ask Sahayak or the AI.
+- Repeat alerts: the same (type, entity, filter/file id) is sent to phones at most once per 10 min; repeats are audited as `notify_skipped`. Every send is audited as `notify` with per-phone ok/status.
+
+### Filter score markers (`brain/scoring.py`; labels are fixed, Ask Sahayak's `KNOWN_MARKERS`/`MARKER_POINTS` must match)
+sends mail outside / to another account +3 · forwards to an anonymous mailbox +1 · hides mail +2 · targets money or security words +2 (or targets a vendor's email +2, never both; `VENDOR_DOMAINS`) · hides and marks as read +1 (only with money/security words) · copies mail the clinic sends +2 · matches almost every email +1 · other risky change in the last 24 h +2 (forwarding/auto-forward/send-as changes and any rule scoring 3+). Levels: 5+ alert, 3-4 ask, below 3 digest.
 
 ## 3. graph.json (`GET /graph`)
 `{nodes: [{data: {id, label, kind: attacker|asset|jewel}}], edges: [{data: {id, source, target, ease, factors, verified, live}}], risk, open_paths, one_fix: {fix, text, risk_drop, paths_closed}}`

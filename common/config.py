@@ -10,6 +10,7 @@ def env(name, default=""):
 BRAIN_URL = env("BRAIN_URL", "http://127.0.0.1:8000")
 BRAIN_IP = env("BRAIN_IP", "127.0.0.1")
 CLINIC_DOMAIN = env("CLINIC_DOMAIN", "gmail.com")
+VENDOR_DOMAINS = [d.strip().lower() for d in env("VENDOR_DOMAINS").split(",") if d.strip()]   # e.g. supplier.in,bank.in
 CLINIC_EMAIL = env("CLINIC_EMAIL", "")
 POLL_SECONDS = int(env("POLL_SECONDS", "30") or 30)
 TELEGRAM_TOKEN = env("TELEGRAM_TOKEN")
@@ -29,6 +30,14 @@ DEVICE_ID = env("DEVICE_ID", "frontdesk-pc")
 WATCH_DIR = env("WATCH_DIR", "./ClinicFiles")
 DRY_RUN = env("DRY_RUN", "1") == "1"
 AGENT_TOKEN = env("AGENT_TOKEN")                       # same value on brain + agent; empty = not checked
+BRAIN_TOKEN = env("BRAIN_TOKEN")                       # same value on brain + sensors + bot; empty = not checked
+
+
+def brain_headers():
+    """Header for POST /actions and non-agent POST /events when BRAIN_TOKEN is set."""
+    return {"X-Brain-Token": BRAIN_TOKEN} if BRAIN_TOKEN else {}
+
+
 SUSPEND = env("SUSPEND", "1") == "1"                    # agent: freeze the process doing the writing
 SIGNAL_METER = env("SIGNAL_METER", "1") == "1"          # agent: live 3-dot signal line in the terminal
 

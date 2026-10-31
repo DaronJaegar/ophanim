@@ -2,7 +2,7 @@
 Run:  python -m sensors.run
 """
 import time, requests
-from common.config import BRAIN_URL, POLL_SECONDS
+from common.config import BRAIN_URL, POLL_SECONDS, brain_headers
 from common.contracts import make_event
 from sensors.google_auth import gmail, drive
 from sensors.gmail_watch import snapshot, diff
@@ -28,7 +28,8 @@ def main():
                 source = "drive" if etype == "file_public" else "gmail"
                 entity = f"file:{evidence['file_id']}" if etype == "file_public" else "gmail:clinic"
                 try:
-                    r = requests.post(f"{BRAIN_URL}/events", json=make_event(source, etype, entity, evidence), timeout=10)
+                    r = requests.post(f"{BRAIN_URL}/events", json=make_event(source, etype, entity, evidence),
+                                      headers=brain_headers(), timeout=10)
                     print(etype, "->", r.status_code)
                     delivered = delivered and r.ok
                 except requests.RequestException as e:

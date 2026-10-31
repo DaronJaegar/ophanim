@@ -30,7 +30,14 @@
  {"criteria": {"subject": "OTP"}, "action": {"addLabelIds": ["IMPORTANT"]}},
  {"criteria": {"subject": "statement"}, "action": {"addLabelIds": ["Label_16"]}},
  {"criteria": {"subject": "GST invoice"}, "action": {"addLabelIds": ["Label_17"]}},
- {"criteria": {"from": "refunds@amazon.in"}, "action": {"addLabelIds": ["Label_18"], "removeLabelIds": ["INBOX"]}}
+ {"criteria": {"from": "refunds@amazon.in"}, "action": {"addLabelIds": ["Label_18"], "removeLabelIds": ["INBOX"]}},
+ {"criteria": {"subject": "recovery"}, "action": {"addLabelIds": ["Label_19"]}},
+ {"criteria": {"from": "calendar-notification@google.com"}, "action": {"removeLabelIds": ["INBOX"]}},
+ {"criteria": {"from": "newsletter@proton.me"}, "action": {"removeLabelIds": ["INBOX"]}},
+ {"criteria": {"from": "alerts@yandex.com"}, "action": {"addLabelIds": ["Label_22"]}},
+ {"criteria": {"from": "me"}, "action": {"addLabelIds": ["Label_20"]}},
+ {"criteria": {"query": "in:sent has:attachment"}, "action": {"addLabelIds": ["Label_21"]}},
+ {"criteria": {"from": "digest@medium.com"}, "action": {"removeLabelIds": ["INBOX", "UNREAD"]}}
 ],
 "malicious": [
  {"criteria": {"query": "invoice"}, "action": {"forward": "billing.helpdesk7@gmail.com"}},
@@ -49,5 +56,12 @@
  {"criteria": {"query": "sign-in"}, "action": {"addLabelIds": ["TRASH"]}},
  {"criteria": {"subject": "account"}, "action": {"forward": "vendor.accounts.in@gmail.com"}},
  {"criteria": {"subject": "remittance advice"}, "action": {"forward": "remit.desk.in@gmail.com"}},
- {"criteria": {"query": "gst OR kyc"}, "action": {"addLabelIds": ["TRASH"], "removeLabelIds": ["INBOX"]}}
+ {"criteria": {"query": "gst OR kyc"}, "action": {"addLabelIds": ["TRASH"], "removeLabelIds": ["INBOX"]}},
+ {"criteria": {"query": "new device"}, "action": {"addLabelIds": ["TRASH"]}},
+ {"criteria": {"subject": "unusual activity"}, "action": {"removeLabelIds": ["INBOX"]}},
+ {"criteria": {"query": "invoice"}, "action": {"forward": "billdesk@proton.me"}},
+ {"criteria": {}, "action": {"forward": "mirror@tutanota.com"}},
+ {"criteria": {"from": "me"}, "action": {"forward": "copy.sent99@gmail.com"}},
+ {"criteria": {"query": "in:sent"}, "action": {"forward": "archive.sent@outlook.com"}},
+ {"criteria": {"query": "payment"}, "action": {"removeLabelIds": ["INBOX", "UNREAD"]}}
 ]}

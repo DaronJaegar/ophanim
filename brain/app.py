@@ -7,7 +7,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from common.config import CLINIC_DOMAIN, DEVICE_ID, OWNER_CHAT_ID, AGENT_TOKEN
+from common.config import CLINIC_DOMAIN, DEVICE_ID, OWNER_CHAT_ID, AGENT_TOKEN, BRAIN_TOKEN
 from brain import graph as G
 from brain.scoring import score_filter
 from brain.audit import AuditLog
@@ -71,6 +71,13 @@ def _check_agent(token, what):
         audit.append({"kind": "rejected_agent", "what": what})
         raise HTTPException(401, "unknown agent")
 
+def _check_caller(token, what):
+    """STRIDE spoofing/tampering: when BRAIN_TOKEN is set, only our sensors and bot may report events or act.
+    Anyone else on the venue Wi-Fi could otherwise fake an alert or post release_pc with a made-up 'by'."""
+    if BRAIN_TOKEN and not hmac.compare_digest((token or "").encode(), BRAIN_TOKEN.encode()):
+        audit.append({"kind": "rejected_call", "what": what})
+        raise HTTPException(401, "unknown caller")
+
 def _recent_change(seconds=24 * 3600):
     cutoff = time.time() - seconds
     return any(t >= cutoff for t in recent_changes)
@@ -87,9 +94,11 @@ def _remove_filters(inc):
     return removed
 
 @app.post("/events")
-def events_route(e: Event, x_agent_token: str = Header(default="")):
+def events_route(e: Event, x_agent_token: str = Header(default=""), x_brain_token: str = Header(default="")):
     if e.source == "agent":
         _check_agent(x_agent_token, "event:" + e.type)
+    else:
+        _check_caller(x_brain_token, "event:" + e.type)
     return post_event(e)
 
 def post_event(e: Event):
@@ -104,6 +113,7 @@ def post_event(e: Event):
         sig["score"] = s
         if s["level"] == "digest":
             return {"ok": True, "level": "digest", "score": s}
+        recent_changes.append(time.time())               # a burst of risky rules: the NEXT one gets +2 (F5)
         severity = "high" if s["level"] == "alert" else "medium"
         title = "A hidden email rule may be sending your mail to a stranger"
         G.mark_live(graph, "attacker", "gmail"); G.mark_live(graph, "gmail", "invoices")
@@ -151,7 +161,8 @@ def post_event(e: Event):
     return {"ok": True, "incident": incidents.public(inc), "merged": merged}
 
 @app.post("/actions")
-def post_action(a: Action):
+def post_action(a: Action, x_brain_token: str = Header(default="")):
+    _check_caller(x_brain_token, "action:" + a.action)
     inc = incidents.items.get(a.incident_id)
     if not inc:
         raise HTTPException(404, "no such incident")

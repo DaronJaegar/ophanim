@@ -218,7 +218,8 @@ def search(question, k=3, boost=()):
 # ---------- the open alert, reduced to safe fields ----------
 KNOWN_MARKERS = {"sends mail outside", "sends mail to another account", "hides mail",
                  "targets money or security words", "matches almost every email",
-                 "other risky change in the last 24 h"}
+                 "other risky change in the last 24 h", "forwards to an anonymous mailbox",
+                 "targets a vendor's email", "hides and marks as read", "copies mail the clinic sends"}
 
 
 def open_incident(incidents):
@@ -292,7 +293,8 @@ def step_still_reply(ctx):
 # ---------- explaining the live alert: exact, from the alert's own data, never the AI ----------
 MARKER_POINTS = {"sends mail outside": 3, "sends mail to another account": 3, "hides mail": 2,
                  "targets money or security words": 2, "matches almost every email": 1,
-                 "other risky change in the last 24 h": 2}
+                 "other risky change in the last 24 h": 2, "forwards to an anonymous mailbox": 1,
+                 "targets a vendor's email": 2, "hides and marks as read": 1, "copies mail the clinic sends": 2}
 PC_SIGNS = {"decoy": "hidden decoy files were touched", "entropy": "files were rewritten as scrambled data",
             "rename": "many files were renamed in a burst"}
 SIGNAL_TEXT = {

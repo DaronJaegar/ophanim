@@ -5,7 +5,7 @@ import asyncio, json, re, requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR_CHAT_IDS, BRAIN_URL,
-                           SECURITY_CODE, IT_CHAT_ID, CLINIC_NAME)
+                           SECURITY_CODE, IT_CHAT_ID, CLINIC_NAME, brain_headers)
 from common.contracts import make_event
 from sahayak import ask, signing
 from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT, RESTORE_OFFER
@@ -53,7 +53,7 @@ def check_tap(cid, data):
 # ---------- talking to the brain (in a thread, so one slow call never freezes every chat) ----------
 async def brain(path, body):
     def go():
-        r = requests.post(BRAIN_URL + path, json=body, timeout=10)
+        r = requests.post(BRAIN_URL + path, json=body, headers=brain_headers(), timeout=10)
         try:
             return r.json() if r.content else {}
         except ValueError:
