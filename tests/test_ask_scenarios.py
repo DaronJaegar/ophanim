@@ -101,3 +101,39 @@ def test_alert_step_does_not_repeat_forever(monkeypatch):
 def test_done_without_an_alert_is_just_thanks(monkeypatch):
     monkeypatch.setattr(ask, "LLM_API_KEY", "")
     assert ask.answer("done", [], chat="d1")[0] == ask.THANKS
+
+
+# ---------- "Is this link safe?" (sahayak/urlcheck.py): offline rules, never the AI ----------
+LINKS = [  # (message staff forward, expected warning words or None = no sign found)
+    ("Dear customer KYC expires today https://sbi-kyc-update.com/verify", "pretends to be SBI"),
+    ("hdfc alert http://hdfcbnak.com/login", "pretends to be HDFC Bank"),
+    ("track your parcel https://bit.ly/3abc", "short link"),
+    ("install this to get the refund https://apps.example.in/refund.apk", "downloads a program"),
+    ("login here https://paytm.com@evil.example/login", "@ sign"),
+    ("lunch order https://zomato.com/order", None),
+    ("report is here https://drive.google.com/file/d/1", None),
+]
+
+
+def test_link_check_warns_on_scam_links_and_never_says_safe():
+    from sahayak import urlcheck
+    for msg, want in LINKS:
+        reply = urlcheck.check_text(msg)
+        assert "safe." not in reply.replace("can't be sure it's safe", "")        # never "this is safe"
+        if want:
+            assert reply.startswith(urlcheck.CAREFUL) and want in reply, msg
+        else:
+            assert reply == urlcheck.NORMAL, msg
+        assert not ask.dangerous(reply)
+
+
+def test_link_messages_never_reach_ask_or_the_ai(monkeypatch):
+    bot = pytest.importorskip("sahayak.bot")
+    monkeypatch.setattr(bot, "ALLOWED", {"222"})
+    monkeypatch.setattr(bot, "IT_CHAT_ID", "555")
+    assert bot.route("222", "is this real? https://sbi-kyc-update.com") == "link"
+    assert bot.route("555", "check www.amazon-offers.xyz/win") == "link"
+    assert bot.route("222", "our bank account changed, new details https://x.in/b") == "paisa"   # Paisa Pause first
+    assert bot.route("222", "is this link safe?") == "ask"                                     # no link: a question
+    assert bot.route("999", "https://bit.ly/x") == "ignore"                                    # unknown phones
+    assert ask.search("is this link safe")[0][1]["id"] == "urlcheck"

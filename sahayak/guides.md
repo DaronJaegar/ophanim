@@ -92,6 +92,17 @@ If nobody at the clinic made it, tap No, remove it. We save a copy as proof, the
 3. If nobody made it, tap No, remove it.
 4. If you're not sure, tap Call my IT helper.
 
+## maildownload | Someone switched on downloading of all the email
+keywords: pop, imap, download all email, mail program, outlook, thunderbird, email downloaded, copy of all mail, download setting
+Someone switched on a setting that lets a mail program download every email in the clinic account.
+If nobody at the clinic set up a new mail program, a stranger may be copying all your mail.
+Change the setting back in Gmail, then change the email password from your phone.
+1. On your phone's browser open Gmail > Settings > See all settings.
+2. Open Forwarding and POP/IMAP.
+3. Choose Disable POP and Disable IMAP, then Save Changes.
+4. Change the email password from your phone and sign out other devices.
+5. Tell your IT helper.
+
 ## forward | Email is being copied to a stranger
 keywords: forwarding, forward, copy, copies, auto forward, email copied, stranger, address, gmail settings, all email
 Someone set the clinic email to send copies of mail to another address.
@@ -254,6 +265,16 @@ Keep the backup drive unplugged when you are not copying to it.
 4. Safely remove the drive and keep it somewhere safe.
 5. Do this every week.
 
+## updates | The computer is missing updates or virus protection
+keywords: updates, windows update, antivirus, virus protection, defender, windows security, out of date, old computer, missing updates, protection off
+The front-desk computer is missing safety updates, or its virus protection is off.
+Most attacks use old weak spots that updates have already fixed.
+Run Windows Update today, or ask your IT helper to do it.
+1. On the front-desk PC open Start > Settings > Windows Update.
+2. Click Check for updates and install everything. Restart only when the clinic is quiet.
+3. Open Windows Security > Virus & threat protection and make sure it is on.
+4. If anything says it is managed by someone else, call your IT helper.
+
 ## restore | Putting the locked files back
 keywords: restore, files back, recover, put the files back, backup, locked files, get files back, lost files
 After the computer is reconnected, the owner gets a button: Owner: put the files back.
@@ -275,6 +296,16 @@ Tell your IT helper what you clicked and when.
 2. If you typed a password there, change it now from your phone.
 3. Sign out all other devices from the email.
 4. Tell your IT helper what you clicked and when.
+
+## urlcheck | Is this link safe? How Sahayak checks a link
+keywords: is this link safe, check link, check this link, link safe, suspicious link, website real, fake website, short link, url, forward link, should i open this link
+Forward the message with the link to Sahayak. We never open it, we only look at the address.
+We warn you about fake bank names, short links, odd letters and links that download apps.
+Even if we see no warning sign, never type a password, OTP or card number from a link. Open the app yourself.
+1. Don't tap the link.
+2. Forward the whole message to Sahayak.
+3. If we say be careful, delete the message and tell the owner.
+4. If it claims to be your bank or a vendor, call the number you already have.
 
 ## call | Who to call for help
 keywords: who to call, call for help, call, calling, contact, it helper, emergency, helpline, number, support, phone number, reach

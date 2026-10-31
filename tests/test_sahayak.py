@@ -163,7 +163,7 @@ def test_fake_invoice_offers_remove_it_only_when_a_rule_exists():
 def test_new_alerts_have_plain_words_and_buttons():
     from sahayak.notify import BUTTONS
     from sahayak.messages import HOW, WHY, RESTORE_OFFER
-    for t in ("agent_stopping", "backup_old"):
+    for t in ("agent_stopping", "backup_old", "mail_download_on", "pc_health"):
         assert jargon_ok(TEMPLATES[t]["en"]) and t in BUTTONS and t in HOW and t in WHY, t
     assert jargon_ok(RESTORE_OFFER)
 

@@ -167,6 +167,19 @@ def test_digest_keeps_counts_and_labels_never_rule_text(client):
     bot = pytest.importorskip("sahayak.bot")
     assert "1 small email rule change" in bot.digest_text(d) and "IGNORE" not in bot.digest_text(d)
 
+def test_pop_or_imap_switched_on_alerts_only_off_to_on():
+    from sensors.gmail_watch import diff
+    base = {"filters": {}, "forwarding": {}, "autoforward": False, "autoforward_to": "", "send_as": {}}
+    off, pop_on = {**base, "pop": False, "imap": False}, {**base, "pop": True, "imap": False}
+    assert diff(off, pop_on) == [("mail_download_on", {"pop": True, "imap": False})]
+    assert diff(pop_on, pop_on) == [] and diff(None, pop_on) == []           # already on at start: baseline
+    assert diff({**base, "pop": None, "imap": None}, pop_on) == []           # unknown last round: no alert
+    assert diff(base, pop_on) == []                                          # snapshot from before this check
+
+def test_mail_download_on_opens_a_high_incident(client):
+    inc = _event(client, "mail_download_on", "gmail:clinic", {"pop": True, "imap": False})["incident"]
+    assert inc["severity"] == "high" and A._recent_change()
+
 def test_merged_incident_next_step_is_confirm_with_owner(client):
     _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
     inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
@@ -215,3 +228,15 @@ def test_restore_is_owner_only_and_queues_the_agent(client, monkeypatch):
     assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "222"}).status_code == 403
     assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "111"}).json()["queued"]
     assert client.get("/agent/commands", params={"device": A.DEVICE_ID}).json()["commands"] == ["restore"]
+
+
+def test_pc_health_moves_the_risk_graph_and_alerts_only_when_unhealthy(client, monkeypatch):
+    monkeypatch.setattr(A, "AGENT_TOKEN", "")
+    ease = lambda: A.graph["attacker"]["pc"]["factors"]["phishing_attachment"]
+    risk0 = G.total_risk(A.graph)
+    ok = {"defender_on": True, "realtime_on": True, "signature_age_days": 0, "days_since_update": 3}
+    r = client.post("/events", json={"source": "agent", "type": "pc_health", "entity": "pchealth:pc", "evidence": ok}).json()
+    assert r.get("healthy") and ease() == 0.1 and G.total_risk(A.graph) < risk0 and client.get("/incidents").json() == []
+    bad = {**ok, "days_since_update": 45}
+    inc = client.post("/events", json={"source": "agent", "type": "pc_health", "entity": "pchealth:pc", "evidence": bad}).json()["incident"]
+    assert ease() == 0.6 and inc["severity"] == "low" and G.total_risk(A.graph) > risk0

@@ -20,6 +20,9 @@ TEMPLATES = {
     "autoforward_on": {
         "en": "All your new email is being copied to a stranger.\nThey can read your bills and patient letters.\nTap Show me how to turn it off.",
     },
+    "mail_download_on": {
+        "en": "Someone switched on a setting that lets another app download all the clinic email.\nIf nobody at the clinic did this, a stranger may be copying your mail.\nTap Show me how to change the setting back.",
+    },
     "sendas_added": {
         "en": "Someone added a new address that can send email as the clinic.\nIt can be used to send fake bills to your patients and vendors.\nTap Show me how to remove it.",
     },
@@ -42,6 +45,9 @@ TEMPLATES = {
     },
     "backup_old": {
         "en": "The newest copy of your clinic files is more than a week old.\nIf files get locked, you would lose a week of work.\nTap Show me how to make a fresh copy today.",
+    },
+    "pc_health": {
+        "en": "The front-desk computer is missing safety updates, or its virus protection is off.\nThat makes it easier for someone to lock your files.\nTap Show me how.",
     },
     "bank_change_request": {
         "en": "Don't pay yet. This message says a vendor's bank details changed.\nThat is the most common way clinics lose money.\nTap Check with the vendor: we'll ask on the number you saved.",
@@ -126,10 +132,12 @@ HOW = {
     "forwarding_added": "Gmail > Settings > See all settings > Forwarding and POP/IMAP > remove any address you don't recognise > Save.",
     "autoforward_on": "Gmail > Settings > See all settings > Forwarding and POP/IMAP > Disable forwarding > Save changes.",
     "sendas_added": "Gmail > Settings > See all settings > Accounts > Send mail as > delete the address you don't know.",
+    "mail_download_on": "Gmail > Settings > See all settings > Forwarding and POP/IMAP > Disable POP and Disable IMAP > Save Changes. Then change the password from your phone.",
     "file_public": "Drive > right-click the folder > Share > General access > Restricted.",
     "heartbeat_missing": "Don't restart the PC. Call your IT helper and say the safety check stopped.",
     "agent_stopping": "Ask at the front desk if anyone switched off Sahayak's protection. If not, don't use the PC and call your IT helper.",
     "backup_old": "Copy the clinic files folder to the backup drive (or ask your IT helper). Do it every week.",
+    "pc_health": "On the front-desk PC: Start > Settings > Windows Update > Check for updates. Then open Windows Security and check virus protection is on. Or ask your IT helper.",
 }
 
 WHY = {
@@ -137,9 +145,11 @@ WHY = {
     "filter_ask": "Email rules can sort mail, but criminals use them to hide or copy bills. This one looked a little unusual, so only the owner can say if it's theirs.",
     "ransomware_suspected": "Ransomware locks your files and asks for money. Cutting the PC off stops it reaching your other computers.",
     "bank_change_request": "Fraudsters copy a vendor's email and ask you to pay a new account. One call to the number you already have stops it.",
+    "mail_download_on": "With this on, a mail program can quietly download every email, bills and patient letters too, and keep a copy even after you change the password.",
     "honeytoken_hit": "We hid a fake bank login in your files. Only an intruder would open it.",
     "agent_stopping": "Attackers often switch off protection first, so nothing warns you while they lock your files.",
     "backup_old": "A recent copy of your files means locked files can simply be put back, without paying anyone.",
+    "pc_health": "Most attacks use old weak spots that updates have already fixed. Updates and virus protection close them.",
     "_default": "Someone may be inside your clinic's accounts. Following the steps keeps your money and patient data safe.",
 }
 

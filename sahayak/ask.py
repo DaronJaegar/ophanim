@@ -62,9 +62,10 @@ MENU_TOPICS = {"1": "someone asks for otp password", "2": "bill bank details cha
 # Which guides belong to which alert, so questions during an alert find the right help first.
 TYPE_GUIDES = {
     "filter_added": ["rule"], "filter_ask": ["newrule", "rule"], "forwarding_added": ["forward"], "autoforward_on": ["forward"],
-    "sendas_added": ["sendas"], "file_public": ["public"], "honeytoken_hit": ["decoy"],
+    "sendas_added": ["sendas"], "mail_download_on": ["maildownload", "hacked"], "file_public": ["public"], "honeytoken_hit": ["decoy"],
     "ransomware_suspected": ["locked", "offline"], "heartbeat_missing": ["stopped"],
     "agent_stopping": ["stopped"], "backup_old": ["backup"], "bank_change_request": ["bill"],
+    "pc_health": ["updates"],
     "merged": ["locked", "rule", "password"],
 }
 
@@ -193,7 +194,7 @@ VOCAB = sorted(_DF)
 
 
 WHY_GUIDES = {"steporder", "severity", "linkcheck", "release", "offline", "buttons", "privacy", "falsealarm",
-              "emailcheck", "pccheck", "protectioncheck", "billcheck", "drivecheck", "answers"}
+              "emailcheck", "pccheck", "protectioncheck", "billcheck", "drivecheck", "answers", "urlcheck"}
 WHY_RE = re.compile(r"^\W*(why|kyun|kyon|how come)\b", re.I)
 
 
@@ -296,21 +297,25 @@ MARKER_POINTS = {"sends mail outside": 3, "sends mail to another account": 3, "h
                  "other risky change in the last 24 h": 2, "forwards to an anonymous mailbox": 1,
                  "targets a vendor's email": 2, "hides and marks as read": 1, "copies mail the clinic sends": 2}
 PC_SIGNS = {"decoy": "hidden decoy files were touched", "entropy": "files were rewritten as scrambled data",
-            "rename": "many files were renamed in a burst"}
+            "rename": "many files were renamed in a burst",
+            "note": "a ransom note file appeared"}            # only when the agent runs with RANSOM_NOTES=1
 SIGNAL_TEXT = {
     "forwarding_added": "A new forwarding address was added to the clinic email.",
     "autoforward_on": "Automatic forwarding of all email was switched on.",
     "sendas_added": "A new 'send mail as' address was added, so mail can be sent in the clinic's name.",
+    "mail_download_on": "A setting was switched on that lets another mail program download all the clinic email.",
     "file_public": "A file or folder was shared with anyone who has the link.",
     "honeytoken_hit": "Someone opened the fake bank login we hid. Only an intruder would do that.",
     "heartbeat_missing": "The protection on the front-desk computer stopped checking in for more than 15 seconds.",
     "agent_stopping": "The protection on the front-desk computer was switched off.",
     "backup_old": "The newest backup of the clinic files is more than 7 days old.",
+    "pc_health": "The front-desk computer is missing safety updates, or its virus protection is off.",
     "bank_change_request": "A message said a vendor's bank details changed (a money word next to a change word).",
 }
 TECHNIQUE = {"filter_added": "T1114.003 email forwarding rule, T1564.008 email hiding rule",
              "forwarding_added": "T1114.003 email forwarding", "autoforward_on": "T1114.003 email forwarding",
              "sendas_added": "T1078 valid accounts (sending as the clinic)",
+             "mail_download_on": "T1114.002 remote email collection",
              "honeytoken_hit": "T1078 valid accounts (someone inside the clinic's files)",
              "ransomware_suspected": "T1486 data encrypted for impact",
              "agent_stopping": "T1562.001 disable security tools", "heartbeat_missing": "T1562.001 disable security tools"}
@@ -332,7 +337,7 @@ def _signal_points(sig, mode):
     elif t == "ransomware_suspected":
         flags = ev.get("signals") if isinstance(ev.get("signals"), dict) else {}
         seen = [txt for k, txt in PC_SIGNS.items() if flags.get(k) is True]
-        out.append(f"• The front-desk computer showed {len(seen)} of 3 signs of files being locked within a minute "
+        out.append(f"• The front-desk computer showed {len(seen)} of {len(flags) or 3} signs of files being locked within a minute "
                    "(2 are enough):" if seen else "• The front-desk computer showed signs of files being locked.")
         out += [f"   – {x}" for x in seen]
         if ev.get("contained") is True:

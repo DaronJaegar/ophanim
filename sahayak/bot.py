@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR_CHAT_IDS, BRAIN_URL,
                            SECURITY_CODE, IT_CHAT_ID, CLINIC_NAME, brain_headers)
 from common.contracts import make_event
-from sahayak import ask, signing
+from sahayak import ask, signing, urlcheck
 from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT, RESTORE_OFFER
 from sahayak.notify import header, incident_type
 
@@ -238,15 +238,20 @@ HELP_TEXT = ("Ask me anything about the clinic's safety in your own words, even 
              "• the computer is showing strange pop-ups\n"
              "Say \"steps\" for step-by-step help, or \"didn't understand\" for simpler words.\n"
              "Forward any message about changed bank details and I'll check it with the vendor.\n"
+             "Forward a message with a link and I'll tell you if it shows warning signs (I never open it).\n"
+             "/status: is everything ok?  /digest: small email changes we didn't alert on.\n"
              "I never ask for passwords, OTPs or payments.")
 
 
 def route(cid, text, is_forward=False, has_photo=False):
-    """Where a message goes: 'paisa' | 'photo_hint' | 'not_bank' | 'ask' | 'ignore'.
-    Paisa Pause first; a forwarded message is something to check, not a question."""
+    """Where a message goes: 'paisa' | 'link' | 'photo_hint' | 'not_bank' | 'ask' | 'ignore'.
+    Paisa Pause first; then links, judged offline by urlcheck and NEVER sent to Ask Sahayak or the AI
+    (attacker-written, and a pasted bait link would leak its token); a forwarded message is something to check."""
     clinic, it = cid in ALLOWED, bool(IT_CHAT_ID) and cid == IT_CHAT_ID
     if clinic and BANK_CHANGE.search(text or ""):
         return "paisa"
+    if (clinic or it) and urlcheck.has_link(text):
+        return "link"
     if clinic and has_photo and not text:
         return "photo_hint"
     if clinic and is_forward:
@@ -339,6 +344,9 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                   has_photo=bool(update.message.photo))
     if where == "ask":
         await reply_ask(update, ctx, text)
+        return
+    if where == "link":
+        await update.message.reply_text(f"{header()}\n{urlcheck.check_text(text)}")
         return
     if where == "ignore":
         return                                                    # only clinic phones (and IT) are answered

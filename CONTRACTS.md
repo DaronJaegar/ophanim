@@ -20,12 +20,19 @@ Build it with `common.contracts.make_event(source, type_, entity, evidence)`.
 | `backup_old` | Ayan (agent, at start-up, backup > 7 days or missing) | `backup:<id>` | backup_age_days, folder | tap, severity low, **never merges** |
 | `files_restored` | Ayan (agent, after a restore command) | `device:<id>` | files, from, ok | logged only, no incident |
 | `bank_change_request` | Aradhya (sahayak) | `vendor:payment` (own entity, never merges with email/PC) | text | tap |
+| `mail_download_on` | Bruce (gmail, POP or IMAP switched off -> on; first snapshot is the baseline) | `gmail:clinic` | pop, imap (true = just switched on) | tap, high; counts as a recent change |
+| `pc_health` | Ayan (agent, `PC_HEALTH=1`, Windows, start-up + every 6 h) | `pchealth:<id>` | defender_on, realtime_on, signature_age_days, days_since_update | sets the graph's attacker->pc factor (0.1 healthy / 0.6 not); unhealthy (protection off, update > 30 days, signatures > 7 days) = low alert, never merges; healthy = logged only |
+
+`ransomware_suspected` evidence `signals` may also carry `note` (a ransom-note file name) when the agent runs with `RANSOM_NOTES=1`.
+A `filter_added` scoring 3-4 opens a **medium "ask"** incident (Sahayak type `filter_ask`: owner-only "Yes, it's mine" / "No, remove it"). A filter the owner confirmed returns `level: "confirmed"` and never opens an incident again.
 
 `ransomware_suspected` evidence also carries `suspended_process`, `suspended_pid`, `backup_age_days`.
 Unknown types return `{"ok": true, "ignored": <type>}`. A `filter_added` that scores below 3 returns `level: "digest"` and opens no incident.
 
 ## 2. Other endpoints
-- `POST /actions` `{incident_id, action, by, step}`; action = `remove_filter | make_private | contain_pc | release_pc | restore_files | ack | step_done | vendor_said_yes | vendor_said_no`. `release_pc` and `restore_files` are owner-only (`by` must equal `OWNER_CHAT_ID`, else 403); both return `queued: true`. `step_done` with `remove_attacker_rules` deletes the filters; `change_password*` applies the 2-step fix.
+- `POST /actions` `{incident_id, action, by, step}`; action = `remove_filter | make_private | contain_pc | release_pc | restore_files | ack | step_done | vendor_said_yes | vendor_said_no`. `release_pc` and `restore_files` are owner-only (`by` must equal `OWNER_CHAT_ID`, else 403); both return `queued: true`. `step_done` with `remove_attacker_rules` deletes the filters; `change_password*` applies the 2-step fix. `rule_is_mine` (owner-only, else 403) removes only the incident's ask-level filter signals and remembers their ids; it closes the incident only if nothing else is left (a merged ransomware incident stays open). `called_it_helper` and `asked_vendor` are recorded only. Any action stops reminders for that incident.
+- **Reminders:** an open high/critical incident nobody acted on is re-sent after 10 min with fixed words (no AI), at most twice; the second also tells `IT_CHAT_ID`. Audited as `reminder`.
+- `GET /digest`: `{count, by_marker, latest}` for low-score rules (score and our marker labels only, never rule text).
 - `POST /heartbeat` `{device}` every 5 s; 15 s of silence raises `heartbeat_missing`.
 - `GET /agent/commands?device=` returns and clears `{"commands": ["release" | "contain" | "restore"]}`.
 - **Agent token:** when `AGENT_TOKEN` is set on the brain, `/heartbeat`, `/agent/commands` and every `/events` call with `source: "agent"` need the header `X-Agent-Token: <same value>`; otherwise 401 and a `rejected_agent` audit row. Sensors and Sahayak are not affected.

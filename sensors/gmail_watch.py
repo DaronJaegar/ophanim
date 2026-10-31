@@ -9,7 +9,13 @@ def snapshot(svc):
     fwd = s.forwardingAddresses().list(userId="me").execute().get("forwardingAddresses", [])
     auto = s.getAutoForwarding(userId="me").execute()
     send_as = s.sendAs().list(userId="me").execute().get("sendAs", [])
+    try:                            # POP/IMAP let a mail program download every email (same settings.basic scope)
+        pop = s.getPop(userId="me").execute().get("accessWindow", "disabled") != "disabled"
+        imap = bool(s.getImap(userId="me").execute().get("enabled", False))
+    except Exception:
+        pop = imap = None           # unknown this round: never alerts
     return {
+        "pop": pop, "imap": imap,
         "filters": {f["id"]: f for f in filters},
         "forwarding": {a["forwardingEmail"]: a.get("verificationStatus", "") for a in fwd},
         "autoforward": auto.get("enabled", False),
@@ -33,4 +39,7 @@ def diff(old, new):
     for email in new["send_as"]:
         if email not in old["send_as"]:
             out.append(("sendas_added", {"address": email}))
+    turned_on = [k for k in ("pop", "imap") if new.get(k) is True and old.get(k) is False]   # off -> on only
+    if turned_on:
+        out.append(("mail_download_on", {k: k in turned_on for k in ("pop", "imap")}))
     return out

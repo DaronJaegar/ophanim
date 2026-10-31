@@ -3,7 +3,7 @@ Signals: (1) a decoy file is touched, (2) newly written files look random (high 
 (3) a burst of renames. Any 2 different signals within WINDOW seconds = ransomware.
 Upgrade: files renamed to an unusual extension (.txt -> .locked) strengthen the rename signal:
 EXT_BURST of them count as a rename burst, because normal bulk renames keep familiar extensions."""
-import math, os, threading, time
+import math, os, re, threading, time
 from collections import Counter, deque
 
 WINDOW = 60
@@ -17,6 +17,11 @@ KNOWN_EXT = {"", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".ppt", ".ppt
              ".rtf", ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".heic", ".webp", ".mp3", ".wav",
              ".mp4", ".mov", ".avi", ".zip", ".7z", ".rar", ".gz", ".tar", ".xml", ".json", ".html", ".htm",
              ".bak", ".tmp", ".log", ".md"}   # renames TO these are everyday (Office saves, downloads, photos)
+
+# Optional 4th sign (RANSOM_NOTES=1): ransomware drops a note telling you how to pay. Normal work never
+# creates files with these names. Off by default, so the 2-of-3 rule and eval set B are unchanged.
+NOTE_RE = re.compile(r"(readme.{0,3}(decrypt|restore|recover)|how.{0,3}to.{0,3}(decrypt|restore|recover|back)|"
+                     r"(decrypt|restore|recover).{0,3}(files|instructions|my.?files)|^_readme\.txt$|\.hta$)", re.I)
 
 def shannon_entropy(data: bytes) -> float:
     if not data:
@@ -36,15 +41,17 @@ def unusual_extension_change(path, dest):
     return old != new and new not in KNOWN_EXT
 
 class Detector:
-    def __init__(self, now=time.time):
+    def __init__(self, now=time.time, notes=False):
         self.now = now
+        self.notes = notes                 # RANSOM_NOTES: count ransom-note file names as a 4th sign
         self.lock = threading.RLock()      # the watcher thread and the signal meter both read the queues
         self.reset()
 
     def reset(self):
         """Forget every signal (after a release or a restore), so the rule can fire again."""
         with self.lock:
-            self.signals = {"decoy": deque(), "entropy": deque(), "rename": deque(), "extension": deque()}
+            self.signals = {"decoy": deque(), "entropy": deque(), "rename": deque(), "extension": deque(),
+                            "note": deque()}
             self.fired = False
 
     def _trim(self):
@@ -60,11 +67,14 @@ class Detector:
 
     def active(self):
         c = self.counts()
-        return {
+        out = {
             "decoy": c["decoy"] > 0,
             "entropy": c["entropy"] >= ENTROPY_HITS,
             "rename": c["rename"] >= RENAME_BURST or c["extension"] >= EXT_BURST,
         }
+        if self.notes:
+            out["note"] = c["note"] > 0
+        return out
 
     def on_event(self, kind, path, dest=None):
         """kind: 'modified' | 'moved' | 'deleted' | 'created'. Returns True the first time the rule fires."""
@@ -73,6 +83,8 @@ class Detector:
             names = [os.path.basename(path)] + ([os.path.basename(dest)] if dest else [])
             if any(n in DECOY_NAMES for n in names):
                 self.signals["decoy"].append(t)
+            if self.notes and kind in ("created", "moved") and NOTE_RE.search(os.path.basename(dest or path)):
+                self.signals["note"].append(t)
             if kind == "moved":
                 self.signals["rename"].append(t)
                 if dest and unusual_extension_change(path, dest):

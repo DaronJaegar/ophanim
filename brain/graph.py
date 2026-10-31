@@ -68,6 +68,11 @@ def apply_fix(g, fix_name):
     target = d["orig"] if d.get("live") else d["factors"]   # if the edge is under live attack, fix the saved values
     target[f["factor"]] = f["value"]
 
+def set_factor(g, a, b, factor, value):
+    """A measured fact (e.g. the PC's update age) sets one factor. Under a live attack the saved values change."""
+    d = g[a][b]
+    (d["orig"] if d.get("live") else d["factors"])[factor] = value
+
 def one_fix(g):
     """Greedy: try each fix on a copy, keep the one that removes the most risk."""
     base = total_risk(g)

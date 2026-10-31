@@ -40,6 +40,8 @@ def brain_headers():
 
 SUSPEND = env("SUSPEND", "1") == "1"                    # agent: freeze the process doing the writing
 SIGNAL_METER = env("SIGNAL_METER", "1") == "1"          # agent: live 3-dot signal line in the terminal
+RANSOM_NOTES = env("RANSOM_NOTES", "0") == "1"          # agent: a ransom-note file name is a 4th sign (off until after Gate 2)
+PC_HEALTH = env("PC_HEALTH", "0") == "1"                # agent (Windows): report virus protection + update age (off until after Gate 2)
 
 # Who uses what (from the onboarding chat). Used by correlation.
 PEOPLE = {

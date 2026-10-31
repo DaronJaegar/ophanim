@@ -11,7 +11,7 @@ Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-
 
 **Current phase: Phase 0, before the event (setup only). Close to done, not complete.**
 - Module B (brain, console, eval) is at the level the docs ask for by Gate 2 *in the starter*: graph + Risk 12.45, scorer, correlation, audit chain, policy, heartbeat watcher, console. Verified by tests, eval and smoke runs, **but only in isolation** (no live sensor, bot or agent has posted to it yet).
-- The team is now active on GitHub: Bruce pushed 3 sensor fixes, Aradhya pushed a large Sahayak update. All merged on `main`; **88 tests pass** (incl. Aradhya's 20 Ask Sahayak scenario tests).
+- The team is now active on GitHub: Bruce pushed 3 sensor fixes, Aradhya pushed a large Sahayak update. All merged on `main`; **113 tests pass** (incl. Aradhya's Ask Sahayak scenario tests).
 - Real credentials now work on Aaron's laptop: Google OAuth (clinic account, Gmail + Drive read OK) and the Telegram bot token (`@sahayak_incognito_bot`, `getMe` OK).
 - What still blocks the Phase 0 gate: chat IDs and honeytokens in `.env`, organiser answers, and each teammate's own smoke test (section 8).
 
@@ -61,7 +61,7 @@ Team: Bruce = A (account sensors), Aaron = B (brain + console + eval), Ayan = C 
 ---
 
 ## 4. What the code contains (per module, with state)
-Run all commands from the project folder. `pytest`: **88 passed** (brain, brain flow, Drive, detector, Sahayak, Ask Sahayak scenarios). Eval: A **17/17 caught, 0/32 false alarms** at thresholds 3-4, B 10/10, C 9/9.
+Run all commands from the project folder. `pytest`: **113 passed** (brain, brain flow, Drive, reset, detector, Sahayak, Ask Sahayak scenarios). Eval: A **24/24 caught, 0/39 false alarms** at thresholds 3-4, B 10/10, C 9/9.
 
 ### 4.1 Brain (Aaron) - `brain/`
 - `app.py`: `POST /events`, `POST /actions`, `POST /heartbeat`, `GET /agent/commands`, `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, honeytoken router mount, background heartbeat watcher (5 s tick, 15 s silence = `heartbeat_missing`), Sahayak notifier plugged in at startup. Aaron's fixes: section 5.3 and 7.1.
@@ -286,7 +286,17 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] Failure replies no longer start with "Done." (`sahayak/bot.py`).
 - [x] F1: Indian billing money words (gst, remittance, beneficiary, kyc, cheque, a/c, swift, imps, payout). Not "refund": it turned "archive Amazon refund mail" into a false alarm; that case stays in the eval as a guard.
 - [ ] Bait-link test 4a/4b: open the decoy link in Chrome (1 hit, `decoy-email`); paste it **only into Telegram Saved Messages, never the bot chat** (the bot would send it to the AI via Ask Sahayak); hit count must not rise.
-- [ ] Section B of the plan check: one item at a time, each needs Aaron's "go" (Windows hand test for Gate 2, reset script, BRAIN_TOKEN, ask level, digest, F2-F7, POP, /status, IT summary, reminders, link check, PC health).
+- [x] Section B of the plan check: all built after Aaron's go (2026-11-01). **113 tests pass; eval A 24/24 caught, 0/39 false alarms; B 10/10; C 9/9; live brain smoke test 19/19** (scratch folder, dummy Telegram, no real messages).
+  - **Reset:** `python -m scripts.reset_demo --dry-run` first, then without it (type RESET). Releases + restores the PC through the brain (owner actions), Gmail back to `gmail_baseline.json`, Drive private, stops/starts brain + sensors + bot, moves `chakravyuh.db` to `runs/`. Dry run on Aaron's laptop worked and found **one attacker filter still in the clinic Gmail** (`invoice` -> forward): the next real reset deletes it.
+  - **BRAIN_TOKEN** (optional, `.env`): POST /actions and non-agent POST /events need `X-Brain-Token`; reads stay open. Set it once on Aaron's laptop and restart all three; nobody else needs it.
+  - **New filter markers:** more security words (not bare google.com), anonymous-mailbox forward +1, `VENDOR_DOMAINS` +2 (set the vendors' email domains in `.env`), hide + mark read +1 (only with money/security words), copies sent mail +2, and a rule scoring 3+ boosts the next rule (+2). Note: during a demo, a second rule within 24 h of a risky change scores +2 (an "ask" demo becomes an alert unless run from a reset).
+  - **Ask level (3-4):** "Did you make it?" Owner-only **Yes, it's mine** (clears only that rule, never closes a merged ransomware incident, never asks again) / **No, remove it**.
+  - **Reminders:** high/critical alert with no tap for 10 min -> sent again (fixed words, no AI), max 2; the 2nd also tells the IT helper.
+  - **Digest** (`GET /digest`, bot `/digest`), **`/status`** (= "is everything ok?"), **IT helper message** = plain points + MITRE + report link (no raw filter text).
+  - **Link check:** a message with a link is judged offline (`sahayak/urlcheck.py`) and never goes to Ask Sahayak or the AI (so a pasted bait link can't leak its token either).
+  - **POP/IMAP watch:** live read showed both off on the clinic account; switching either on alerts (`mail_download_on`, T1114.002).
+  - **Agent (off until after Gate 2):** `RANSOM_NOTES=1` adds a ransom-note file-name sign; `PC_HEALTH=1` (Windows) reports Defender + update age, which moves the Risk graph (healthy: 18.6 -> 17.0 in the smoke test) and gives a low alert if unhealthy. Checked on Aaron's laptop: protection on, last update 3 days ago.
+- [ ] Not done on purpose: Section C (roadmap only); Paisa Pause catching typed questions (needs Aradhya's go).
 - Note: Ayan's demo PC is **Windows** now (Linux is out).
 - [x] Section B #1 written: `agent/hand_test_containment.ps1` (Windows Gate 2 hand test). Uses the real `agent/contain.py` with DRY_RUN=0 for that run only, checks google.com:443 blocked + brain:8000 reachable, always releases, prints ALL PASS. Also lists non-Windows programs with their own allow-outbound rule (they can bypass block-outbound). Parser-checked and dry-run checked only; **Ayan must run it** (Administrator PowerShell, brain running).
 - [ ] Ayan: `powershell -ExecutionPolicy Bypass -File agent\hand_test_containment.ps1 -BrainIp 10.215.200.40` -> ALL PASS screenshot.

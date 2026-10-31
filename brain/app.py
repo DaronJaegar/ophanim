@@ -161,6 +161,10 @@ def post_event(e: Event):
         recent_changes.append(time.time())
         severity, title = "medium", "Someone is trying to copy your email to a stranger"
         G.mark_live(graph, "attacker", "gmail")
+    elif e.type == "mail_download_on":                   # POP or IMAP switched on: all mail can be downloaded
+        recent_changes.append(time.time())
+        severity, title = "high", "Someone switched on downloading of all the clinic's email"
+        G.mark_live(graph, "attacker", "gmail")
     elif e.type in ("autoforward_on", "sendas_added"):
         recent_changes.append(time.time())
         severity, title = "high", "Your email settings were changed to send mail elsewhere"
@@ -184,6 +188,15 @@ def post_event(e: Event):
         last_heartbeat.pop(e.entity.split(":", 1)[-1], None)   # already alerted: no second heartbeat alert
     elif e.type == "backup_old":
         severity, title, merge = "low", "The clinic's newest backup is old", False
+    elif e.type == "pc_health":                          # agent PC_HEALTH=1: a measured fact moves the Risk graph
+        ev, days = e.evidence, e.evidence.get("days_since_update")
+        unhealthy = (ev.get("defender_on") is False or ev.get("realtime_on") is False
+                     or (isinstance(days, int) and days > 30)
+                     or (isinstance(ev.get("signature_age_days"), int) and ev["signature_age_days"] > 7))
+        G.set_factor(graph, "attacker", "pc", "phishing_attachment", 0.6 if unhealthy else 0.1)
+        if not unhealthy:
+            return {"ok": True, "recorded": e.type, "healthy": True}
+        severity, title, merge = "low", "The front-desk computer is missing safety updates or protection", False
     elif e.type == "files_restored":                     # the agent finished a restore: logged, no new alert
         return {"ok": True, "recorded": e.type}
     elif e.type == "bank_change_request":

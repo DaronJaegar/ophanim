@@ -74,3 +74,24 @@ def test_restore_refuses_unmarked_backup_and_restores_marked(tmp_path, monkeypat
     assert agent.restore_files(Detector()) > 0
     assert (watch / "note.txt").read_bytes() == b"original" and not (watch / "note.txt.locked").exists()
     assert all((watch / n).exists() for n in DECOY_NAMES)
+
+
+def test_ransom_note_is_a_4th_sign_only_when_switched_on(tmp_path):
+    from agent.detector import NOTE_RE
+    names = ["README_DECRYPT.txt", "HOW_TO_RECOVER_FILES.html", "_readme.txt", "restore-my-files.txt", "info.hta"]
+    normal = ["README.md", "how_to_book_appointments.docx", "recovery_plan_2026.docx", "restore_points.xlsx",
+              "readme.txt", "Decrypted_report_final.pdf"]
+    assert all(NOTE_RE.search(n) for n in names) and not any(NOTE_RE.search(n) for n in normal)
+    plant_decoys(tmp_path)
+    off, on = Detector(), Detector(notes=True)
+    for d in (off, on):
+        d.on_event("created", str(tmp_path / "README_DECRYPT.txt"))
+        d.on_event("modified", str(tmp_path / DECOY_NAMES[0]))           # note + decoy = 2 signs
+    assert "note" not in off.active() and not off.fired                   # off: behaviour unchanged
+    assert on.active()["note"] and on.fired
+
+
+def test_pc_health_returns_none_off_windows(monkeypatch):
+    from agent import upgrades
+    monkeypatch.setattr(upgrades.os, "name", "posix")
+    assert upgrades.pc_health() is None

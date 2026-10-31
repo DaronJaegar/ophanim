@@ -4,11 +4,12 @@ Run (Linux, real containment needs root):  sudo -E .venv/bin/python -m agent.age
 import os, shutil, signal, sys, threading, time, requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from common.config import BRAIN_URL, DEVICE_ID, WATCH_DIR, AGENT_TOKEN, SUSPEND, SIGNAL_METER
+from common.config import (BRAIN_URL, DEVICE_ID, WATCH_DIR, AGENT_TOKEN, SUSPEND, SIGNAL_METER,
+                           RANSOM_NOTES, PC_HEALTH)
 from common.contracts import make_event
 from agent.detector import Detector, plant_decoys
 from agent.fake_ransomware import MARKER
-from agent.upgrades import top_writer_now, backup_age_days
+from agent.upgrades import top_writer_now, backup_age_days, pc_health
 from agent import contain as C
 
 AUTO_CONTAIN = True          # owner pre-approved: ransomware is the ONE thing we act on without a tap
@@ -142,18 +143,32 @@ def check_backup():
         post("/events", make_event("agent", "backup_old", f"backup:{DEVICE_ID}",
                                    {"backup_age_days": age, "folder": BACKUP_DIR}))
 
+def health_loop():
+    """PC_HEALTH=1 (Windows): report virus protection and update age at start-up and every 6 hours.
+    The brain turns it into the Risk graph's front-desk PC factor (and a low alert if unhealthy)."""
+    while True:
+        h = pc_health()
+        if h:
+            post("/events", make_event("agent", "pc_health", f"pchealth:{DEVICE_ID}", h))
+            print(f"PC health: protection {'on' if h.get('defender_on') else 'OFF'}, "
+                  f"last update {h.get('days_since_update')} days ago")
+        time.sleep(6 * 3600)
+
 def main():
     os.makedirs(WATCH_DIR, exist_ok=True)
     plant_decoys(WATCH_DIR)
-    det = Detector()
+    det = Detector(notes=RANSOM_NOTES)
     obs = Observer()
     obs.schedule(Handler(det), WATCH_DIR, recursive=True)
     obs.start()
     check_backup()
     threading.Thread(target=heartbeat_loop, daemon=True).start()
     threading.Thread(target=command_loop, args=(det,), daemon=True).start()
+    if PC_HEALTH:
+        threading.Thread(target=health_loop, daemon=True).start()
     print(f"Agent watching {WATCH_DIR} as {DEVICE_ID} -> {BRAIN_URL}"
-          f"{' (agent token on)' if AGENT_TOKEN else ''}{' (suspend on)' if SUSPEND else ''}")
+          f"{' (agent token on)' if AGENT_TOKEN else ''}{' (suspend on)' if SUSPEND else ''}"
+          f"{' (ransom notes on)' if RANSOM_NOTES else ''}{' (PC health on)' if PC_HEALTH else ''}")
     if SIGNAL_METER:
         threading.Thread(target=meter_loop, args=(det,), daemon=True).start()
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))   # 'systemctl stop' / kill -> same tamper alarm as Ctrl+C

@@ -15,6 +15,7 @@ BUTTONS = {          # signal type -> [(label, code)]; codes are decoded by the 
     "forwarding_added": [("Show me how", "how"), ("Call my IT helper", "it")],
     "autoforward_on": [("Show me how", "how"), ("Call my IT helper", "it")],
     "sendas_added": [("Show me how", "how"), ("Call my IT helper", "it")],
+    "mail_download_on": [("Show me how", "how"), ("Call my IT helper", "it"), ("What does this mean?", "why")],
     "file_public": [("Make it private", "mp"), ("Call my IT helper", "it")],
     "honeytoken_hit": [("Start the fix", "st"), ("Call my IT helper", "it"), ("What does this mean?", "why")],
     "ransomware_suspected": [("Okay, I won't switch it off", "ack"), ("Call my IT helper", "it")],
@@ -22,6 +23,7 @@ BUTTONS = {          # signal type -> [(label, code)]; codes are decoded by the 
     "agent_stopping": [("Call my IT helper", "it"), ("Show me how", "how"), ("What does this mean?", "why")],
     "backup_old": [("Show me how", "how"), ("What does this mean?", "why")],
     "bank_change_request": [("Check with the vendor", "vv"), ("What does this mean?", "why")],
+    "pc_health": [("Show me how", "how"), ("What does this mean?", "why"), ("Call my IT helper", "it")],
     "unknown": [("Call my IT helper", "it")],
 }
 
