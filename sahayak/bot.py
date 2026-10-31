@@ -9,7 +9,7 @@ from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR
 from common.contracts import make_event
 from sahayak import ask, signing, urlcheck
 from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT, RESTORE_OFFER
-from sahayak.notify import header, incident_type
+from sahayak.notify import header, incident_type, contact_lines
 
 ALLOWED = {c for c in [OWNER_CHAT_ID] + STAFF_CHAT_IDS if c}
 VENDOR_CHATS = set(VENDOR_CHAT_IDS.values())
@@ -106,7 +106,8 @@ async def send_to_it(ctx, inc):
     """The technical view goes to the IT helper (jargon allowed here). Returns True if sent."""
     if not IT_CHAT_ID:
         return False
-    await ctx.bot.send_message(IT_CHAT_ID, f"{header()} · technical details for the IT helper\n{it_summary(inc)[:3800]}")
+    await ctx.bot.send_message(IT_CHAT_ID, f"{header()} · technical details for the IT helper\n"
+                                       f"{contact_lines()}\n\n{it_summary(inc)[:3600]}")
     return True
 
 
@@ -239,6 +240,7 @@ HELP_TEXT = ("Ask me anything about the clinic's safety in your own words, even 
              "Say \"steps\" for step-by-step help, or \"didn't understand\" for simpler words.\n"
              "Forward any message about changed bank details and I'll check it with the vendor.\n"
              "Forward a message with a link and I'll tell you if it shows warning signs (I never open it).\n"
+             "Ask \"IT helper number\", \"owner number\" or \"who do I call\" for the clinic's phone numbers.\n"
              "/status: is everything ok?  /digest: small email changes we didn't alert on.\n"
              "I never ask for passwords, OTPs or payments.")
 

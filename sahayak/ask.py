@@ -20,6 +20,7 @@ from collections import Counter
 import requests
 
 from common.config import LLM_BASE_URL, LLM_API_KEY, LLM_MODEL
+from common import config
 from sahayak.llm import THINK, thinks
 from sahayak.messages import STEP_DONE, STEP_HOW, STEP_LABEL, jargon_found, jargon_ok
 from sahayak.notify import incident_type
@@ -70,6 +71,59 @@ TYPE_GUIDES = {
 }
 
 # ---------- understanding the message ----------
+# ---------- "call the IT helper" / "owner's number": phone numbers from .env, never from the AI ----------
+_WHO = {"it": r"(it|i\.t\.)\s*(helper|help|guy|person|support|team|wala|admin|department)|tech(nician|\s*support|\s*guy)",
+        "owner": r"owner|doctor|boss|malik",
+        "staff": r"staff|front\s*desk|reception(ist)?",
+        "vendor": r"vendor|supplier|distributor"}
+_ASK = r"(call|phone|number|num|contact|reach|ring|mobile|no\.?)"
+CONTACT_RE = {k: re.compile(rf"\b{_ASK}\b[\w\s']{{0,20}}?\b({w})\b|\b({w})('s)?\s+{_ASK}\b", re.I) for k, w in _WHO.items()}
+CALL_IT_RE = re.compile(r"^\W*(please\s+)?(call|phone|ring|contact)\s+(the\s+)?(it|i\.t\.)\W*$", re.I)
+WHOM_RE = re.compile(r"\b(who|whom)\s+(do|should|can|to)\s*(i|we)?\s*(call|contact|ring|tell)\b|"
+                     r"\b(important|emergency|helpline|contact)\s+(numbers?|contacts?)\b|\ball (the )?numbers\b", re.I)
+CONTACT_LABEL = {"it": "IT helper", "owner": "Owner", "staff": "Front desk", "vendor": "Vendor"}
+CONTACT_SOURCE = "Clinic contacts"
+
+
+def _phone(who):
+    return {"it": config.IT_PHONE, "owner": config.OWNER_PHONE, "staff": config.CLINIC_PHONE,
+            "vendor": config.VENDOR_PHONE}[who]
+
+
+def _name(who):
+    name = {"it": config.IT_NAME, "owner": config.OWNER_NAME, "staff": config.STAFF_NAME,
+            "vendor": config.VENDOR_NAME}[who] or ""
+    return "" if name.strip().lower() in ("", "owner", "the owner") else name.strip()
+
+
+def _asked_by_name(who, question):
+    """'call Aaron', "aradhya's number": the person's first name with a call/number word."""
+    first = _name(who).split()[0] if _name(who) else ""
+    if len(first) < 3:
+        return False
+    w = re.escape(first)
+    return bool(re.search(rf"\b{_ASK}\b[\w\s']{{0,20}}?\b{w}\b|\b{w}('s)?\s+{_ASK}\b", question, re.I))
+
+
+def contact_reply(question):
+    """Which numbers the person asked for, or None if this isn't a contact question."""
+    wanted = [k for k, rx in CONTACT_RE.items() if rx.search(question) or _asked_by_name(k, question)]
+    if CALL_IT_RE.search(question) and "it" not in wanted:
+        wanted.append("it")
+    if not wanted and WHOM_RE.search(question):
+        wanted = ["it", "owner", "staff"]
+    if not wanted:
+        return None
+    lines = []
+    for k in wanted:
+        num = _phone(k)
+        name = f"{CONTACT_LABEL[k]} ({_name(k)})" if _name(k) else CONTACT_LABEL[k]
+        lines.append(f"{name}: {num}" if num else f"{name}: no number saved yet. Ask the owner to add it.")
+    if len(wanted) == 3:
+        lines.append("For money already lost, also call 1930, the national cyber fraud helpline.")
+    return "\n".join(lines)
+
+
 GREET_RE = re.compile(r"^\W*(hi+|hello+|hey+|namaste|namaskar|good (morning|afternoon|evening)|"
                       r"what can you do|how (do i|to) use (this|you|sahayak))\W*$", re.I)
 THANKS_RE = re.compile(r"^\W*(thanks?|thank you|thx|ty|ok(ay)?|ok thanks|great|got it|done|dhanyavad|shukriya)\W*$", re.I)
@@ -574,6 +628,9 @@ def answer(question, incidents=None, mode="staff", call=None, chat=None):
     # 1. things that never need a guide
     if harmful(question):
         return done(REFUSE)
+    contact = contact_reply(question)
+    if contact:
+        return done(contact, CONTACT_SOURCE)
     if GREET_RE.search(question):
         return done(GREETING)
     if DONE_RE.search(question):

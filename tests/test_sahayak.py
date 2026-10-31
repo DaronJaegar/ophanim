@@ -472,3 +472,14 @@ def test_new_scenarios_find_their_guides():
                    "are the buttons hmac signed": "buttons", "why change password from phone not computer": "steporder",
                    "i think this alert is a mistake": "falsealarm"}.items():
         assert ask.answer(q, [], chat=_chat_id())[1] == ask.BY_ID[gid]["title"], q
+
+
+def test_it_helper_gets_whom_to_call(monkeypatch):
+    from sahayak import notify
+    monkeypatch.setattr(notify, "OWNER_PHONE", "+91 90000 00000")
+    monkeypatch.setattr(notify, "OWNER_NAME", "Dr. Rao")
+    monkeypatch.setattr(notify, "CLINIC_PHONE", "")
+    text = notify.contact_lines()
+    assert "Call the owner: Dr. Rao, +91 90000 00000" in text and "Front desk" not in text
+    monkeypatch.setattr(notify, "OWNER_PHONE", "")
+    assert "Add OWNER_PHONE" in notify.contact_lines()            # a missing number is said, not hidden

@@ -3,6 +3,7 @@ The brain calls send_incident(incident) whenever an incident opens, merges or a 
 It runs inside the brain process, so it never raises and never blocks for long."""
 import requests
 from common.config import TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, SECURITY_CODE, CHAT_LANGS, IT_CHAT_ID
+from common.config import CLINIC_NAME, OWNER_NAME, OWNER_PHONE, CLINIC_PHONE, STAFF_NAME
 from sahayak import signing
 from sahayak.messages import template_for, STEP_LABEL, STEP_TEXT, STEP_DONE, OWNER_STEPS, IT_REMINDER
 from sahayak.llm import reword
@@ -30,6 +31,18 @@ BUTTONS = {          # signal type -> [(label, code)]; codes are decoded by the 
 
 def header():
     return f"Sahayak · Code {SECURITY_CODE}"
+
+
+def contact_lines():
+    """Who the IT helper should call. Only goes to the IT helper's chat, never to staff or vendors."""
+    lines = [f"Clinic: {CLINIC_NAME}"]
+    if OWNER_PHONE:
+        lines.append(f"Call the owner: {OWNER_NAME}, {OWNER_PHONE}")
+    if CLINIC_PHONE:
+        lines.append(f"Front desk: {STAFF_NAME + ', ' if STAFF_NAME else ''}{CLINIC_PHONE}")
+    if not (OWNER_PHONE or CLINIC_PHONE):
+        lines.append("No phone number saved. Add OWNER_PHONE to the bot's .env.")
+    return "\n".join(lines)
 
 
 def incident_type(inc):
@@ -105,7 +118,7 @@ def send_reminder(inc, n):
     sent = send_incident({**inc, "reminder": n})
     if n >= 2 and IT_CHAT_ID and TELEGRAM_TOKEN:
         try:
-            ok, status = _send(IT_CHAT_ID, f"{header()}\n{IT_REMINDER.format(iid=inc['id'])}", [])
+            ok, status = _send(IT_CHAT_ID, f"{header()}\n{IT_REMINDER.format(iid=inc['id'])}\n\n{contact_lines()}", [])
             sent.append({"to": "..." + str(IT_CHAT_ID)[-3:], "owner": False, "ok": ok, "status": status})
         except Exception as e:
             print(f"[Sahayak] could not tell the IT helper: {e}")

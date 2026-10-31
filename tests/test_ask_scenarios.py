@@ -137,3 +137,52 @@ def test_link_messages_never_reach_ask_or_the_ai(monkeypatch):
     assert bot.route("222", "is this link safe?") == "ask"                                     # no link: a question
     assert bot.route("999", "https://bit.ly/x") == "ignore"                                    # unknown phones
     assert ask.search("is this link safe")[0][1]["id"] == "urlcheck"
+
+
+@pytest.mark.parametrize("message,expect", [
+    ("call it help", ["IT helper: 9000000001"]), ("call IT", ["IT helper: 9000000001"]),
+    ("it helper number", ["IT helper: 9000000001"]), ("give me the it guy's phone", ["IT helper: 9000000001"]),
+    ("owner number pls", ["Owner: 9000000002"]), ("call the doctor", ["Owner: 9000000002"]),
+    ("staff number", ["Front desk: 9000000003"]), ("reception phone number", ["Front desk: 9000000003"]),
+    ("who do i call", ["IT helper: 9000000001", "Owner: 9000000002", "Front desk: 9000000003", "1930"]),
+])
+def test_phone_numbers_on_request(monkeypatch, message, expect):
+    from common import config
+    monkeypatch.setattr(ask, "LLM_API_KEY", "")
+    for k, v in {"IT_PHONE": "9000000001", "OWNER_PHONE": "9000000002", "CLINIC_PHONE": "9000000003",
+                 "OWNER_NAME": "the owner", "IT_NAME": "", "STAFF_NAME": "", "VENDOR_NAME": ""}.items():
+        monkeypatch.setattr(config, k, v)
+    text, src, _ = ask.answer(message, [], chat=f"num-{time.time()}")
+    assert src == ask.CONTACT_SOURCE, (message, text)
+    for e in expect:
+        assert e in text, (message, text)
+
+
+@pytest.mark.parametrize("message", ["someone called me from tech support asking for my password",
+                                     "a caller wants the otp", "should i call the bank", "can i call it a false alarm",
+                                     "is it safe to open this file"])
+def test_contact_questions_dont_steal_other_questions(monkeypatch, message):
+    monkeypatch.setattr(ask, "LLM_API_KEY", "")
+    assert ask.answer(message, [], chat=f"nc-{time.time()}")[1] != ask.CONTACT_SOURCE, message
+
+
+def test_missing_number_is_said(monkeypatch):
+    from common import config
+    monkeypatch.setattr(config, "IT_PHONE", "")
+    assert "no number saved" in ask.answer("it helper number", [], chat="nn")[0]
+
+
+def test_names_and_asking_by_first_name(monkeypatch):
+    from common import config
+    monkeypatch.setattr(ask, "LLM_API_KEY", "")
+    for k, v in {"IT_PHONE": "9000000001", "IT_NAME": "Ravi Kumar", "OWNER_PHONE": "9000000002",
+                 "OWNER_NAME": "Meera Rao", "CLINIC_PHONE": "9000000003", "STAFF_NAME": "Sita Devi",
+                 "VENDOR_NAME": "Anil Supplies", "VENDOR_PHONE": ""}.items():
+        monkeypatch.setattr(config, k, v)
+    assert "IT helper (Ravi Kumar): 9000000001" in ask.answer("call it help", [], chat="n1")[0]
+    assert "IT helper (Ravi Kumar): 9000000001" in ask.answer("call ravi", [], chat="n2")[0]
+    assert "Owner (Meera Rao): 9000000002" in ask.answer("meera's number", [], chat="n3")[0]
+    assert "Front desk (Sita Devi): 9000000003" in ask.answer("staff number", [], chat="n4")[0]
+    assert "Vendor (Anil Supplies): no number saved" in ask.answer("vendor number", [], chat="n5")[0]
+    everyone = ask.answer("who do i call", [], chat="n6")[0]
+    assert "Ravi" in everyone and "Meera" in everyone and "Sita" in everyone and "Vendor" not in everyone
