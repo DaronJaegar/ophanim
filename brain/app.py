@@ -108,6 +108,8 @@ def post_event(e: Event):
     inc, merged = incidents.add_signal(sig, severity, title, policy)
     if e.type == "ransomware_suspected" and "contain_pc" not in inc["done"]:
         inc["done"].append("contain_pc")                 # the agent already contained the PC locally
+    if "save_evidence" in inc["runbook"] and "save_evidence" not in inc["done"]:
+        inc["done"].append("save_evidence")              # the event with its full evidence was just written to the audit log
     audit.append({"kind": "incident", "id": inc["id"], "merged": merged, "severity": inc["severity"]})
     notify(inc)
     return {"ok": True, "incident": incidents.public(inc), "merged": merged}

@@ -1,10 +1,15 @@
 """One-tap fixes (Bruce, Module A). Evidence is saved BEFORE anything is removed."""
+from googleapiclient.errors import HttpError
 from sensors.google_auth import gmail, drive, DRIVE_WRITE_SCOPES
 
 def delete_filter(f, audit):
     svc = gmail()
     audit.append({"kind": "evidence", "what": "gmail_filter", "filter": f})     # 1. preserve
-    svc.users().settings().filters().delete(userId="me", id=f["id"]).execute()  # 2. remove
+    try:
+        svc.users().settings().filters().delete(userId="me", id=f["id"]).execute()  # 2. remove
+    except HttpError as e:
+        if e.resp.status != 404:     # 404 = already gone (removed by hand, or a second tap / runbook step)
+            raise
     remaining = svc.users().settings().filters().list(userId="me").execute().get("filter", [])
     gone = all(x["id"] != f["id"] for x in remaining)                           # 3. re-read to verify
     audit.append({"kind": "fix", "what": "delete_filter", "id": f["id"], "verified": gone})

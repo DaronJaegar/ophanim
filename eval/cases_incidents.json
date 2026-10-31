@@ -1,0 +1,11 @@
+{"pairs": [
+ {"name": "email then PC, 5 min apart", "first": "gmail:clinic", "second": "device:frontdesk-pc", "gap_minutes": 5, "expect_merge": true},
+ {"name": "PC then email, 5 min apart", "first": "device:frontdesk-pc", "second": "gmail:clinic", "gap_minutes": 5, "expect_merge": true},
+ {"name": "email then PC, 23 h apart", "first": "gmail:clinic", "second": "device:frontdesk-pc", "gap_minutes": 1380, "expect_merge": true},
+ {"name": "email then PC, 25 h apart", "first": "gmail:clinic", "second": "device:frontdesk-pc", "gap_minutes": 1500, "expect_merge": false},
+ {"name": "same account twice", "first": "gmail:clinic", "second": "gmail:clinic", "gap_minutes": 1, "expect_merge": true},
+ {"name": "email then a different person's PC", "first": "gmail:clinic", "second": "device:other-pc", "gap_minutes": 5, "expect_merge": false},
+ {"name": "two different PCs", "first": "device:frontdesk-pc", "second": "device:other-pc", "gap_minutes": 5, "expect_merge": false},
+ {"name": "public Drive file then Priya's PC (no shared entity)", "first": "file:abc123", "second": "device:frontdesk-pc", "gap_minutes": 5, "expect_merge": false},
+ {"name": "honeytoken then Priya's email (no person link)", "first": "honeytoken:tok1", "second": "gmail:clinic", "gap_minutes": 5, "expect_merge": false}
+]}
