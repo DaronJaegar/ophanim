@@ -11,13 +11,22 @@ class DriveWatcher:
         out, token = [], self.token
         while token:
             resp = self.svc.changes().list(pageToken=token, spaces="drive",
-                                           fields="nextPageToken,newStartPageToken,changes(fileId,file(name))").execute()
+                                           fields="nextPageToken,newStartPageToken,changes(fileId,removed,file(name))").execute()
             for ch in resp.get("changes", []):
                 fid = ch["fileId"]
+                if ch.get("removed"):             # deleted / lost access: nothing to check
+                    self.seen_public.discard(fid)
+                    continue
                 name = ch.get("file", {}).get("name", "")
-                perms = self.svc.permissions().list(fileId=fid, fields="permissions(id,type,role)").execute()
+                try:
+                    perms = self.svc.permissions().list(fileId=fid, fields="permissions(id,type,role)").execute()
+                except Exception as e:             # one bad file must not stall the whole feed
+                    print("drive: skipped", fid, e)
+                    continue
                 public = [p for p in perms.get("permissions", []) if p["type"] == "anyone"]
-                if public and fid not in self.seen_public:
+                if not public:
+                    self.seen_public.discard(fid)  # made private again -> re-sharing alerts again
+                elif fid not in self.seen_public:
                     self.seen_public.add(fid)
                     out.append(("file_public", {"file_id": fid, "name": name,
                                                 "permission_id": public[0]["id"],
