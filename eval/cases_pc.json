@@ -1,0 +1,12 @@
+{"scenarios": [
+ {"name": "fake ransomware (random content, rename to .locked, touch decoy)", "kind": "ransomware", "files": 10, "decoy": true, "expect_fire": true},
+ {"name": "ransomware without touching a decoy", "kind": "ransomware", "files": 30, "decoy": false, "expect_fire": true},
+ {"name": "encrypt in place + decoy touched, no renames", "kind": "encrypt_in_place", "files": 10, "decoy": true, "expect_fire": true},
+ {"name": "zip a folder (one large high-entropy .zip)", "kind": "zip", "files": 1, "expect_fire": false},
+ {"name": "backup copy of 50 text files", "kind": "backup", "files": 50, "expect_fire": false},
+ {"name": "bulk rename of 40 documents", "kind": "bulk_rename", "files": 40, "expect_fire": false},
+ {"name": "rename 40 photos", "kind": "photo_rename", "files": 40, "expect_fire": false},
+ {"name": "edit 30 documents", "kind": "edit_docs", "files": 30, "expect_fire": false},
+ {"name": "extract 40 .7z archives", "kind": "archives", "files": 40, "expect_fire": false},
+ {"name": "download 10 PDFs", "kind": "pdfs", "files": 10, "expect_fire": false}
+]}

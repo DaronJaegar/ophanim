@@ -34,6 +34,12 @@ def test_merged_remove_step_deletes_filter_and_greys_paths(client):
     gmail_edges = [e for e in client.get("/graph").json()["edges"] if e["data"]["source"] in ("attacker", "gmail") and e["data"]["target"] in ("gmail", "invoices")]
     assert gmail_edges and not any(e["data"]["live"] for e in gmail_edges)
 
+def test_merged_incident_next_step_is_confirm_with_owner(client):
+    _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
+    inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
+    assert "contain_pc" in inc["done"] and "save_evidence" in inc["done"]
+    assert [s for s in inc["runbook"] if s not in inc["done"]][0] == "confirm_with_owner"
+
 def test_ransomware_marks_contain_pc_done_so_incident_can_close(client):
     inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
     assert "contain_pc" in inc["done"]
