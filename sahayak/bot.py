@@ -66,6 +66,30 @@ async def get_incident(iid):
     return next((i for i in incs if i.get("id") == iid), None)
 
 
+FAKE_INVOICE = "FAKE INVOICE: the vendor did not send this. Do not pay."
+
+
+def filter_incident(incs):
+    """Latest open incident that still holds an attacker email rule (so Remove it has something to delete)."""
+    found = [i for i in incs or []
+             if i.get("status") == "open" and "remove_attacker_rules" not in (i.get("done") or [])
+             and any((s.get("evidence") or {}).get("filter") for s in i.get("signals") or [])]
+    return max(found, key=lambda i: str(i.get("updated", "")), default=None)
+
+
+def fake_invoice_followup(incs, paisa_iid):
+    """What the owner gets after the vendor says No: (text, [(label, signed callback)]).
+    Remove it is offered only when an open incident really has an email rule to delete, and is signed
+    for THAT incident; otherwise only Call my IT helper, so we never show a button that would fail."""
+    inc = filter_incident(incs)
+    if inc:
+        text = (f"{FAKE_INVOICE}\nA hidden email rule may be showing your invoices to the scammer.\n"
+                "Tap Remove it.")
+        return text, [("Remove it", signing.make(inc["id"], "rm")), ("Call my IT helper", signing.make(inc["id"], "it"))]
+    text = f"{FAKE_INVOICE}\nYour IT helper can check if someone is reading your email."
+    return text, [("Call my IT helper", signing.make(paisa_iid, "it"))]
+
+
 async def send_to_it(ctx, inc):
     """The technical view goes to the IT helper (jargon allowed here). Returns True if sent."""
     if not IT_CHAT_ID:
@@ -177,9 +201,17 @@ async def handle(q, ctx, cid, iid, code):
                                   "Don't pay until they reply.")
 
     elif code in VENDOR_CODES:
-        verdict = ("The vendor confirmed the change. You can pay the new account." if code == "vy"
-                   else "FAKE INVOICE: the vendor did not send this. Do not pay.")
-        await ctx.bot.send_message(OWNER_CHAT_ID, f"{header()}\n{verdict}")
+        if code == "vy":
+            await ctx.bot.send_message(OWNER_CHAT_ID, f"{header()}\n"
+                                       "The vendor confirmed the change. You can pay the new account.")
+        else:
+            try:
+                incs = await asyncio.to_thread(lambda: requests.get(BRAIN_URL + "/incidents", timeout=10).json())
+            except (requests.RequestException, ValueError):
+                incs = []                                         # no brain: still warn, just no Remove it
+            text, buttons = fake_invoice_followup(incs, iid)
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton(label, callback_data=data)] for label, data in buttons])
+            await ctx.bot.send_message(OWNER_CHAT_ID, f"{header()}\n{text}", reply_markup=kb)
         try:
             await brain("/actions", {"incident_id": iid, "by": cid,
                                      "action": "vendor_said_yes" if code == "vy" else "vendor_said_no"})

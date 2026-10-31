@@ -138,6 +138,26 @@ def test_paisa_pause_detects_and_stays_its_own_incident():
     assert not merged
 
 
+def test_fake_invoice_offers_remove_it_only_when_a_rule_exists():
+    bot = pytest.importorskip("sahayak.bot")
+    paisa = {"id": 9, "status": "open", "done": [], "updated": "2026-10-31T12:10",
+             "signals": [{"type": "bank_change_request", "evidence": {"text": "new bank"}}]}
+    rule = {"id": 4, "status": "open", "done": [], "updated": "2026-10-31T12:00",
+            "signals": [{"type": "filter_added", "evidence": {"filter": {"id": "f1"}}}]}
+    text, buttons = bot.fake_invoice_followup([paisa, rule], 9)
+    assert text.startswith("FAKE INVOICE") and "Do not pay" in text and "Tap Remove it." in text
+    assert jargon_ok(text.split("\n", 1)[1])
+    labels = [b[0] for b in buttons]
+    assert labels == ["Remove it", "Call my IT helper"]
+    assert signing.verify(buttons[0][1]) == (4, "rm")         # signed for the email-rule incident, not the invoice
+    for gone in ({**rule, "status": "closed"}, {**rule, "done": ["remove_attacker_rules"]}):
+        text, buttons = bot.fake_invoice_followup([paisa, gone], 9)   # nothing left to remove
+        assert "Remove it" not in text and [b[0] for b in buttons] == ["Call my IT helper"]
+        assert signing.verify(buttons[0][1]) == (9, "it")
+    text, buttons = bot.fake_invoice_followup([], 9)          # brain unreachable
+    assert text.startswith("FAKE INVOICE") and [b[0] for b in buttons] == ["Call my IT helper"]
+
+
 def test_new_alerts_have_plain_words_and_buttons():
     from sahayak.notify import BUTTONS
     from sahayak.messages import HOW, WHY, RESTORE_OFFER
