@@ -5,6 +5,7 @@ import asyncio, hmac, time
 from datetime import datetime, timezone
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from common.config import CLINIC_DOMAIN, DEVICE_ID, OWNER_CHAT_ID, AGENT_TOKEN, BRAIN_TOKEN
@@ -327,8 +328,20 @@ def get_audit():
 def verify():
     return audit.verify()
 
-@app.get("/console")
+# UI (Ophanim redesign): landing at /, console at /console, old console kept at /console/classic.
+# Assets are vendored under brain/web (no CDN needed on the venue network). JSON APIs above are unchanged.
+app.mount("/ui", StaticFiles(directory="brain/web"), name="ui")
+
+@app.get("/", include_in_schema=False)
+def landing():
+    return FileResponse("brain/web/index.html")
+
+@app.get("/console", include_in_schema=False)
 def console():
+    return FileResponse("brain/web/console.html")
+
+@app.get("/console/classic", include_in_schema=False)
+def console_classic():
     return FileResponse("brain/console/index.html")
 
 async def watch_heartbeats():
