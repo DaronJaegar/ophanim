@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ophanim — every path to your money, watched</title>
+<meta name="description" content="Ophanim (Chakravyuh + Sahayak): a virtual security team for a small clinic. Watches email rules, shared files and the front-desk PC, maps every attack path, and explains alerts in plain words.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Ccircle r='44' fill='none' stroke='%23060606' stroke-width='8'/%3E%3Ccircle r='24' fill='none' stroke='%23060606' stroke-width='8'/%3E%3Ccircle r='9' fill='%237A3FE0'/%3E%3C/svg%3E">
+<link rel="preload" href="/ui/fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ui/ophanim.css">
+<link rel="stylesheet" href="/ui/landing.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <a class="logo" href="/" aria-label="Ophanim home"><span data-ophanim-mark data-size="34" data-spin="slow"></span><span class="word">OPHANIM</span></a>
+  <nav aria-label="Main">
+    <a href="#features">Features</a>
+    <a href="#incident">How it works</a>
+    <a href="/docs">API docs</a>
+  </nav>
+  <a class="btn primary nav-cta" href="/console">Open console <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+</header>
+
+<main id="main">
+<!-- /00-/03 pinned story: text steps on the left, particle brain on the right (scroll morphs it) -->
+<section class="story" id="story" aria-label="What Ophanim is">
+  <div class="stage">
+    <div class="grid-lines" aria-hidden="true"></div>
+    <div class="steps">
+      <article class="step is-active" data-step="0">
+        <div class="tags"><span class="chip lime"><span class="dot"></span> Tripwires armed</span><span class="chip">For a small clinic · no IT staff</span></div>
+        <h1 class="hero-h"><span class="line" data-scramble>Every path to</span><span class="line accent" data-scramble>your money.</span><span class="line" data-scramble>Watched.</span></h1>
+        <p class="lede">Ophanim is a virtual security team for a small business. It watches the email rules, the shared files and the front-desk PC, works out every way an attacker could reach the money or the patient records, and explains each alert in plain words on the owner's phone.</p>
+        <div class="ctas">
+          <a class="btn primary" href="/console">Open console <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+          <a class="btn" href="#features">See all features</a>
+        </div>
+        <dl class="stats">
+          <div><dt class="lbl">Sensors</dt><dd>4 → 1 brain</dd></div>
+          <div><dt class="lbl">Tamper alarm</dt><dd>15 s</dd></div>
+          <div><dt class="lbl">To fix</dt><dd>1 tap</dd></div>
+        </dl>
+      </article>
+      <article class="step" data-step="1" aria-hidden="true">
+        <p class="lbl"><span class="num">/01</span> One brain</p>
+        <h2 data-scramble>Four sensors. One brain.</h2>
+        <p>Gmail, Google Drive, the PC agent and the decoy links all send one event format to one brain. It scores every change, keeps the attack-path graph and decides what needs the owner and what it can handle alone.</p>
+      </article>
+      <article class="step" data-step="2" aria-hidden="true">
+        <p class="lbl"><span class="num">/02</span> Chakravyuh</p>
+        <h2 data-scramble>Every path, scored.</h2>
+        <p>Chakravyuh maps how an attacker gets from a stolen password to <b>Clinic money</b> or <b>Patient records</b>. Risk is the sum, over every path, of how easy each step is times what's at the end. It then names the one fix that removes the most risk.</p>
+      </article>
+      <article class="step" data-step="3" aria-hidden="true">
+        <p class="lbl"><span class="num">/03</span> Ophanim</p>
+        <h2 data-scramble>Wheels of eyes.</h2>
+        <p>The Ophanim are the wheels within wheels, covered in eyes, that never stop turning. Nothing about the clinic's accounts or PC changes without one of them seeing it, and a tamper-proof log records that it did.</p>
+      </article>
+    </div>
+    <div class="canvas-wrap" aria-hidden="true">
+      <canvas id="particles"></canvas>
+      <div class="canvas-fallback"><span data-ophanim-mark data-size="320" data-spin="slow" data-follow></span></div>
+      <div class="hud hud-tl lbl">Ophanim // particle view</div>
+      <div class="hud hud-br lbl" id="hud-step">/00 brain</div>
+    </div>
+    <ol class="progress" aria-hidden="true"><li></li><li></li><li></li><li></li></ol>
+  </div>
+</section>
+
+<div class="marquee" aria-label="Design principles">
+  <div class="marquee-track">
+    <span>Detection is deterministic · AI only rewords the message</span><span>Reads settings and sharing, never the content of mail</span><span>Ransomware is the only automatic action</span><span>Passwords are changed from a clean device</span><span>Every action is written to a hash-chained log</span>
+    <span aria-hidden="true">Detection is deterministic · AI only rewords the message</span><span aria-hidden="true">Reads settings and sharing, never the content of mail</span><span aria-hidden="true">Ransomware is the only automatic action</span><span aria-hidden="true">Passwords are changed from a clean device</span><span aria-hidden="true">Every action is written to a hash-chained log</span>
+  </div>
+  <button class="marquee-toggle" type="button" aria-pressed="false" aria-label="Pause the moving strip">❚❚</button>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features" aria-labelledby="f-h">
+  <header class="sec-head">
+    <p class="lbl">/ Capabilities</p>
+    <h2 id="f-h">Two parts. One watch.</h2>
+    <p class="sec-sub">Chakravyuh is the defence: sensors, brain, graph and console. Sahayak is the helper that talks to the owner and staff on Telegram.</p>
+  </header>
+
+  <div class="group">
+    <div class="group-head"><h3>Chakravyuh</h3><span class="chip ink">The defence</span><p>Sees the attack, scores it, contains what must be contained, and shows the path on the console.</p></div>
+    <div class="cards">
+      <article class="card cross"><p class="lbl"><span class="num">C/01</span> Attack-path graph</p><h4>Risk score + one fix</h4><p>A live graph from <i>Attacker</i> to <i>Clinic money</i> and <i>Patient records</i>. Each arrow has an ease; each path's risk is the ease product × the value at the end. Shows the single fix that closes the most paths.</p><div class="mini"><span class="chip">Risk 12.45</span><span class="chip">4 open paths</span></div></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/02</span> Email rule watch</p><h4>Hidden forwarding, caught</h4><p>Snapshots Gmail filters, forwarding and POP/IMAP access every poll and diffs them. Scores each new rule: forwards outside +3, hides mail +2, money or security words +2, catch-all +1, recent change +2.</p><div class="mini"><span class="chip red">5+ alert</span><span class="chip lime">3–4 ask</span><span class="chip">&lt;3 digest</span></div></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/03</span> Drive watch</p><h4>Public links, made private</h4><p>Notices a file shared as "anyone with the link". One tap makes it private; the evidence is saved first and the setting is re-read to prove the fix worked.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/04</span> PC agent</p><h4>Ransomware tripwire</h4><p>Decoy files, write entropy and rename bursts; any two of three fire it. The PC contains itself with its own firewall (only the brain stays reachable), freezes the process writing most and can restore from backup.</p><div class="mini"><span class="chip red">Only automatic action</span></div></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/05</span> Honeytokens</p><h4>Decoys that tell on intruders</h4><p>A fake "Netbanking login" file and a decoy email carry links no real user should open. Opening one raises an alert; link-preview bots are ignored.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/06</span> Correlation</p><h4>One attack, one incident</h4><p>Email and PC alerts about the same person within 24 hours merge into one incident, severity goes up, and the runbook comes out in the right order.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/07</span> Tamper alarm</p><h4>Silence is an alert</h4><p>The agent checks in every 5 seconds. Fifteen seconds of silence, or someone stopping it, is treated as hostile and reported.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/08</span> Audit log</p><h4>Tamper-proof record</h4><p>Every event, alert and tap is chained with SHA-256. The console shows <b>verified</b>, or the exact row where the chain broke.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">C/09</span> Expert view</p><h4>MITRE ATT&amp;CK + report</h4><p>For the security person in the room: each incident's ATT&amp;CK techniques and a report with its full audit trail.</p></article>
+    </div>
+  </div>
+
+  <div class="group sahayak">
+    <div class="group-head"><h3>Sahayak</h3><span class="chip violet">The helper</span><p>A Telegram bot that turns alerts into plain words and one-tap decisions for people who are not security experts.</p></div>
+    <div class="cards">
+      <article class="card cross"><p class="lbl"><span class="num">S/01</span> Plain alerts</p><h4>Three lines, no jargon</h4><p>Owner and staff get different copies. A language model may reword the message, checked for safety, but never decides anything; it falls back to the template.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">S/02</span> Signed buttons</p><h4>One tap, signed</h4><p>"Remove it", "Make private", "Yes, it's mine". Every button is HMAC-signed, works once and expires in 15 minutes; owner-only actions refuse staff.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">S/03</span> Paisa Pause</p><h4>Stop before money moves</h4><p>A vendor's bank details changed or an urgent payment request? Sahayak pauses it and walks through checking with the vendor on a known number.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">S/04</span> Ask Sahayak</p><h4>Answers from your guides</h4><p>Ask a question in plain words and get an answer drawn from the clinic's own safety guides.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">S/05</span> Runbook</p><h4>Step by step, with why</h4><p>Each runbook step comes as a button with what to do and why. "Call my IT helper" sends the technical details to the IT contact.</p></article>
+      <article class="card cross"><p class="lbl"><span class="num">S/06</span> Check this</p><h4>Photos and links</h4><p>Forward a suspicious screenshot or link and get a hint on whether it's safe.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- GOLDEN PATH -->
+<section class="incident" id="incident" aria-labelledby="i-h">
+  <header class="sec-head">
+    <p class="lbl">/ The demo, end to end</p>
+    <h2 id="i-h">One attack, one incident.</h2>
+    <p class="sec-sub">Attackers don't stay in one place. Ophanim follows the chain across email and the PC and hands the owner one incident with the steps in order.</p>
+  </header>
+  <ol class="timeline">
+    <li class="tl"><span class="tl-n">01</span><p class="lbl">Entry</p><h4>Password stolen</h4><p>Priya's Gmail has no 2-step login. That arrow on the graph is the easiest way in.</p></li>
+    <li class="tl"><span class="tl-n">02</span><p class="lbl">Email</p><h4>Hidden email rule</h4><p>A filter forwards invoice emails outside and skips the inbox. Scored 7: alert. The path turns red.</p></li>
+    <li class="tl"><span class="tl-n">03</span><p class="lbl">PC</p><h4>Ransomware on the front desk</h4><p>The agent trips, isolates the PC with its own firewall and reports to the brain.</p></li>
+    <li class="tl hot"><span class="tl-n">04</span><p class="lbl">Brain</p><h4>One merged incident</h4><p>"Priya's email and her computer are both under attack." Critical, one alert, not three.</p></li>
+    <li class="tl"><span class="tl-n">05</span><p class="lbl">Owner</p><h4>Fixed in order</h4><p>Contain PC → save evidence → confirm → remove rules → change password from a clean device → sign out other devices → check payments → report. All paths go grey.</p></li>
+  </ol>
+</section>
+
+<!-- CONSOLE PREVIEW (live numbers when the brain answers) -->
+<section class="preview" aria-labelledby="p-h">
+  <div class="preview-frame panel">
+    <div class="pv-bar"><span class="lbl"><b>OPHANIM</b> / console</span><span class="chip lime" id="pv-audit">Audit —</span><span class="lbl" id="pv-live">Offline preview</span></div>
+    <div class="pv-body">
+      <svg class="pv-graph" viewBox="0 0 520 300" role="img" aria-label="Simplified attack graph: attacker to Priya's Gmail, records folder and front-desk PC, then to clinic money and patient records">
+        <g stroke="#060606" stroke-width="1.5" fill="none">
+          <path d="M60 150 L190 70"/><path d="M60 150 L190 150" stroke-dasharray="5 4"/><path d="M60 150 L190 230"/>
+          <path d="M190 70 L330 50"/><path d="M190 70 L330 120"/><path d="M330 50 L460 90"/><path d="M330 120 L460 90"/>
+          <path d="M190 150 L460 210"/><path d="M190 230 L460 210"/>
+        </g>
+        <path class="pv-live" d="M60 150 L190 70 L330 120 L460 90" stroke="#D92D20" stroke-width="4" fill="none"/>
+        <g font-family="JetBrains Mono, monospace" font-size="11" fill="#060606">
+          <polygon points="60,132 78,150 60,168 42,150" fill="#D92D20" stroke="#060606"/><text x="60" y="186" text-anchor="middle">Attacker</text>
+          <rect x="160" y="58" width="60" height="24" fill="#F8F8F8" stroke="#060606"/><text x="190" y="100" text-anchor="middle">Priya's Gmail</text>
+          <rect x="160" y="138" width="60" height="24" fill="#F8F8F8" stroke="#060606"/><text x="190" y="180" text-anchor="middle">Records folder</text>
+          <rect x="160" y="218" width="60" height="24" fill="#F8F8F8" stroke="#060606"/><text x="190" y="260" text-anchor="middle">Front-desk PC</text>
+          <rect x="300" y="38" width="60" height="24" fill="#F8F8F8" stroke="#060606"/><text x="330" y="30" text-anchor="middle">Bank login</text>
+          <rect x="300" y="108" width="60" height="24" fill="#F8F8F8" stroke="#060606"/><text x="330" y="150" text-anchor="middle">Invoice emails</text>
+          <polygon points="460,70 478,80 478,100 460,110 442,100 442,80" fill="#D7F15B" stroke="#060606"/><text x="460" y="128" text-anchor="middle">Clinic money</text>
+          <polygon points="460,190 478,200 478,220 460,230 442,220 442,200" fill="#D7F15B" stroke="#060606"/><text x="460" y="248" text-anchor="middle">Patient records</text>
+        </g>
+      </svg>
+      <div class="pv-side">
+        <p class="lbl"><span class="num">/01</span> Risk score</p>
+        <p class="pv-risk" id="pv-risk">12.45</p>
+        <p class="lbl">Open paths <b id="pv-open">4</b></p>
+        <p class="lbl" style="margin-top:14px"><span class="num">/02</span> One fix</p>
+        <p class="pv-fix" id="pv-fix">Turn on 2-step login for Priya</p>
+      </div>
+    </div>
+  </div>
+  <div class="preview-cta">
+    <p class="lbl">/ Live</p>
+    <h2 id="p-h">See it live.</h2>
+    <p>The console updates every 2 seconds from the brain: the graph on the left, everything the owner and the expert need on the right.</p>
+    <a class="btn primary" href="/console">Open console <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="foot-row">
+    <a class="logo" href="#top" aria-label="Back to top"><span data-ophanim-mark data-size="28" data-spin="none"></span><span class="word">OPHANIM</span></a>
+    <nav aria-label="Footer"><a href="/console">Console</a><a href="/docs">API docs</a><a href="/console/classic">Classic console</a></nav>
+  </div>
+  <div class="statusbar"><span><span class="dot" style="color:var(--lime)"></span> Chakravyuh + Sahayak</span><span>Kodikon 6.0 build</span></div>
+</footer>
+
+<script src="/ui/vendor/anime.umd.min.js"></script>
+<script src="/ui/logo.js"></script>
+<script type="module" src="/ui/landing.js"></script>
+</body>
+</html>

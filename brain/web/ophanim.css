@@ -1,0 +1,62 @@
+/* OPHANIM shared tokens + components. Light "cyber brutalism" palette from the CYBR inspo.
+   Contrast checked (WCAG AA 4.5:1 for text): ink/paper, muted/paper, violet-text/paper, red/paper.
+   Lime is a FILL only (always under ink text). */
+@font-face{font-family:"Space Grotesk";font-weight:500;font-display:swap;src:url(fonts/space-grotesk-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Space Grotesk";font-weight:700;font-display:swap;src:url(fonts/space-grotesk-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:700;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2")}
+
+:root{
+  --paper:#F8F8F8; --panel:#E8E9E5; --ink:#060606; --graphite:#2B2B2B; --graphite-2:#4D4D4C;
+  --muted:#6B6970; --line:#060606; --hair:#C9CAC5;
+  --violet:#9059EA; --violet-text:#7A3FE0; --lime:#D7F15B; --red:#D92D20; --ok:#1E7A3A;
+  --display:"Space Grotesk",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.55}
+a{color:var(--violet-text)}
+h1,h2,h3,h4{font-family:var(--display);font-weight:700;letter-spacing:-.01em;margin:0;line-height:1.02;text-transform:uppercase}
+:focus-visible{outline:3px solid var(--violet-text);outline-offset:2px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--ink);color:var(--paper);padding:8px 12px;z-index:100}
+.skip:focus{left:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* small mono label, the inspo's "/01 SECTION" voice */
+.lbl{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lbl b{color:var(--ink);font-weight:700}
+.num{font-family:var(--mono);color:var(--violet-text);font-weight:700}
+
+/* chips / tags */
+.chip{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 8px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);white-space:nowrap}
+.chip.lime{background:var(--lime)}
+.chip.violet{background:var(--violet-text);border-color:var(--violet-text);color:#fff}
+.chip.red{background:var(--red);border-color:var(--red);color:#fff}
+.chip.ink{background:var(--ink);color:var(--paper)}
+.dot{width:8px;height:8px;background:currentColor;display:inline-block}
+
+/* buttons: square, 1px ink, arrow ↗ */
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 18px;border:1px solid var(--ink);
+  font:700 13px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--ink);background:var(--paper);
+  cursor:pointer;transition:background .2s var(--ease-out),color .2s var(--ease-out),transform .2s var(--ease-out)}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--violet);border-color:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--ink)}
+.btn.primary:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink);background:var(--violet-text)}
+.btn svg{width:16px;height:16px}
+
+/* panels with crosshair corners */
+.panel{position:relative;background:var(--panel);border:1px solid var(--line)}
+.cross{position:relative}
+.cross::before,.cross::after{content:"+";position:absolute;font:400 16px/1 var(--mono);color:var(--ink);pointer-events:none}
+.cross::before{top:-9px;left:-6px}.cross::after{bottom:-9px;right:-6px}
+
+/* logo */
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.logo .word{font:700 20px/1 var(--display);letter-spacing:.04em}
+.ophanim-mark{display:block}
+.ophanim-mark .ring{transform-box:fill-box;transform-origin:center}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

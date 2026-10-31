@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ophanim console</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Ccircle r='44' fill='none' stroke='%23060606' stroke-width='8'/%3E%3Ccircle r='24' fill='none' stroke='%23060606' stroke-width='8'/%3E%3Ccircle r='9' fill='%237A3FE0'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/ui/ophanim.css">
+<link rel="stylesheet" href="/ui/console.css">
+</head>
+<body>
+<a class="skip" href="#info">Skip to the risk panel</a>
+<header class="top">
+  <a class="logo" href="/" aria-label="Ophanim home"><span data-ophanim-mark data-size="34" data-spin="slow"></span><span class="word">OPHANIM</span></a>
+  <span class="crumb lbl">/ <b>console</b></span>
+  <span class="chip" id="audit-chip" role="status">Audit —</span>
+  <span class="chip red live-chip" id="live-chip" hidden><span class="dot"></span> Live attack</span>
+  <span class="spacer"></span>
+  <time class="clock lbl" id="clock"></time>
+  <label class="switch"><input type="checkbox" id="expert"><span class="track" aria-hidden="true"></span><span>Expert view</span></label>
+  <a class="toplink lbl" href="/docs">API docs</a>
+</header>
+
+<main class="split" id="split" style="--left:60%">
+  <section class="pane graph-pane" aria-labelledby="g-h">
+    <div class="pane-head">
+      <div>
+        <h1 id="g-h">Attack graph</h1>
+        <p class="lbl"><span id="g-count">— nodes · — steps</span> · <span>tap a box or an arrow</span></p>
+      </div>
+      <div class="tools" role="toolbar" aria-label="Graph controls">
+        <button class="tbtn" id="zin" aria-label="Zoom in">+</button>
+        <button class="tbtn" id="zout" aria-label="Zoom out">−</button>
+        <button class="tbtn" id="fit">Fit</button>
+        <button class="tbtn" id="relayout">Re-layout</button>
+      </div>
+    </div>
+    <div id="cy" role="img" aria-label="Attack graph. The same information is listed in the panel on the right."></div>
+    <aside class="legend" aria-label="Graph key">
+      <p class="lbl"><b>Key</b></p>
+      <ul>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="8,1 15,8 8,15 1,8" fill="#D92D20" stroke="#060606"/></svg>Attacker</li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" fill="#F8F8F8" stroke="#060606"/></svg>Account / asset</li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="8,1 14.5,4.5 14.5,11.5 8,15 1.5,11.5 1.5,4.5" fill="#D7F15B" stroke="#060606"/></svg>Crown jewel</li>
+        <li><svg viewBox="0 0 24 8" aria-hidden="true"><line x1="0" y1="4" x2="24" y2="4" stroke="#060606" stroke-width="2"/></svg>Step (number = how easy, 0–1)</li>
+        <li><svg viewBox="0 0 24 8" aria-hidden="true"><line x1="0" y1="4" x2="24" y2="4" stroke="#060606" stroke-width="2" stroke-dasharray="4 3"/></svg>Not verified</li>
+        <li><svg viewBox="0 0 24 8" aria-hidden="true"><line x1="0" y1="4" x2="24" y2="4" stroke="#D92D20" stroke-width="5"/></svg>Live attack</li>
+      </ul>
+    </aside>
+  </section>
+
+  <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize graph and panel (arrow keys, Home and End)" aria-controls="info" aria-valuemin="30" aria-valuemax="80" aria-valuenow="60" tabindex="0"><span></span></div>
+
+  <section class="pane info-pane" id="info" aria-label="Risk, fix, paths and incidents">
+    <section class="block" aria-labelledby="h1">
+      <p class="lbl" id="h1"><span class="num">/01</span> Risk score</p>
+      <div class="risk-row">
+        <p class="risk" id="risk" aria-live="polite">—</p>
+        <div class="open"><p class="lbl">Open paths</p><p class="open-n" id="open">—</p></div>
+      </div>
+      <p class="lbl audit-line">Audit log: <span id="audit">—</span></p>
+    </section>
+
+    <section class="block fix-block" aria-labelledby="h2">
+      <p class="lbl" id="h2"><span class="num">/02</span> One fix</p>
+      <p class="fix" id="fix">—</p>
+      <p class="fix-impact" id="fix-impact"></p>
+    </section>
+
+    <section class="block" aria-labelledby="h3">
+      <p class="lbl" id="h3"><span class="num">/03</span> Top attack paths</p>
+      <ol class="paths" id="paths"></ol>
+    </section>
+
+    <section class="block" aria-labelledby="h4">
+      <p class="lbl" id="h4"><span class="num">/04</span> Detail</p>
+      <div class="detail" id="detail" aria-live="polite"><p class="hint">Click a box or an arrow to see why it is risky.</p></div>
+    </section>
+
+    <section class="block" aria-labelledby="h5">
+      <p class="lbl" id="h5"><span class="num">/05</span> Incidents <span class="muted">(newest first)</span></p>
+      <div id="incs"></div>
+    </section>
+  </section>
+</main>
+
+<footer class="status">
+  <span class="conn" id="conn" role="status"><span class="dot"></span> <span id="conn-t">Connecting…</span></span>
+  <span class="updated" id="updated"></span>
+  <div class="ticker" aria-label="Recent audit log entries"><div class="ticker-track" id="ticker"></div></div>
+  <button class="tick-toggle" id="tick-toggle" type="button" aria-pressed="false" aria-label="Pause the event ticker">❚❚</button>
+</footer>
+
+<script src="/ui/vendor/anime.umd.min.js"></script>
+<script src="/ui/vendor/cytoscape.min.js"></script>
+<script src="/ui/logo.js"></script>
+<script src="/ui/console.js"></script>
+</body>
+</html>
