@@ -38,9 +38,10 @@ def incident_type(inc):
 
 def base_body(inc, lang="en"):
     """The template for this incident; English may be reworded by the AI."""
-    body = template_for(incident_type(inc), lang)
+    stype = incident_type(inc)
+    body = template_for(stype, lang)
     if lang == "en":
-        body = reword(body, {"title": inc.get("title", ""), "severity": inc.get("severity", "")})
+        body = reword(body, {"title": inc.get("title", ""), "severity": inc.get("severity", "")}, stype=stype)
     return body
 
 

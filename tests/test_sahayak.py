@@ -154,3 +154,30 @@ def test_restore_button_is_owner_only(monkeypatch):
     with pytest.raises(bot.Refused, match="Only the owner"):
         bot.check_tap("222", signing.make(5, "rs"))
     assert bot.ACTIONS["rs"] == "restore_files"
+
+
+def test_safety_critical_alerts_are_never_reworded():
+    bad = lambda *_: "We have already turned off her computer.\nTap Done."      # seen live: wrong meaning
+    for stype in llm.NO_AI:
+        t = TEMPLATES[stype]["en"]
+        assert llm.reword(t, {}, call=bad, stype=stype) == t, stype
+    t = TEMPLATES["filter_added"]["en"]                                        # others may still be reworded
+    good = "A hidden rule in Priya's email sends your bills to a stranger.\nTap Remove it."
+    assert llm.reword(t, {}, call=lambda *_: good, stype="filter_added") == good
+
+
+def test_reasoning_models_get_room_to_think():
+    assert llm.thinks("openai/gpt-oss-20b") and llm.thinks("qwen/qwen3-32b") and llm.thinks("o3-mini")
+    assert not llm.thinks("llama-3.3-70b-versatile") and not llm.thinks("gpt-4o-mini") and not llm.thinks("yolo3")
+    assert llm._body("x", {}, model="openai/gpt-oss-20b")["max_tokens"] == 1500
+    assert llm._body("x", {}, model="llama-3.3-70b-versatile")["max_tokens"] == 200
+    assert llm.THINK.sub("", "<think>plan</think>Tap Remove it.").strip() == "Tap Remove it."
+    assert "```json" in llm.PROMPT                                              # untrusted data stays fenced
+
+
+def test_ai_text_is_plain_for_telegram(monkeypatch):
+    class R:
+        def raise_for_status(self): pass
+        def json(self): return {"choices": [{"message": {"content": "<think>x</think>Hold off.  \nTap **Check with the vendor**."}}]}
+    monkeypatch.setattr(llm.requests, "post", lambda *a, **k: R())
+    assert llm._call("t", {}) == "Hold off.\nTap Check with the vendor."
