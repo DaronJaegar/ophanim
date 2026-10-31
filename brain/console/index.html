@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Chakravyuh console</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<style>
+ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#120e3a;color:#e6e9f2;display:grid;grid-template-columns:2fr 1fr;height:100vh}
+ #cy{border-right:1px solid #3f3c8e} #side{padding:16px;overflow:auto}
+ h2{color:#2ecddb;margin:4px 0 8px} .big{font-size:28px;color:#fbbf24;font-weight:700}
+ .inc{border:1px solid #3f3c8e;border-radius:8px;padding:8px;margin:8px 0} .critical{border-color:#ff6b81} .high{border-color:#fbbf24}
+ .ok{color:#34d399} .bad{color:#ff6b81} small{color:#ac99cf}
+</style></head><body>
+<div id="cy"></div>
+<div id="side">
+ <h2>Chakravyuh</h2>
+ <div>Risk score <span class="big" id="risk">-</span> &nbsp; Open paths <span class="big" id="open">-</span></div>
+ <p><b>One fix:</b> <span id="fix">-</span></p>
+ <p>Audit log: <span id="audit">-</span></p>
+ <h2>Incidents</h2><div id="incs"></div>
+</div>
+<script>
+const POS = {attacker:[60,260], gmail:[260,120], drive:[260,300], pc:[260,440], bank:[460,60], invoices:[460,200], money:[680,130], records:[680,370]};
+const cy = cytoscape({container: document.getElementById('cy'), layout:{name:'preset'},
+ style:[
+  {selector:'node', style:{'label':'data(label)','color':'#fff','text-valign':'center','text-wrap':'wrap','text-max-width':90,
+    'shape':'round-rectangle','width':120,'height':50,'background-color':'#1f1b55','border-width':1.5,'border-color':'#6b6fb8','font-size':13}},
+  {selector:'node[kind="jewel"]', style:{'background-color':'#5a1f3a','border-color':'#ff6b81','border-width':2.5}},
+  {selector:'node[kind="attacker"]', style:{'border-color':'#ff6b81'}},
+  {selector:'edge', style:{'width':2,'line-color':'#6b6fb8','target-arrow-color':'#6b6fb8','target-arrow-shape':'triangle','curve-style':'bezier',
+    'label':'data(ease)','font-size':10,'color':'#ac99cf'}},
+  {selector:'edge[?live]', style:{'line-color':'#ff6b81','target-arrow-color':'#ff6b81','width':4}},
+  {selector:'edge[!verified]', style:{'line-style':'dashed'}}
+ ]});
+async function tick(){
+  const g = await (await fetch('/graph')).json();
+  g.nodes.forEach(n => { n.position = {x:(POS[n.data.id]||[0,0])[0], y:(POS[n.data.id]||[0,0])[1]}; });
+  cy.json({elements:{nodes:g.nodes, edges:g.edges}});
+  document.getElementById('risk').textContent = g.risk;
+  document.getElementById('open').textContent = g.open_paths;
+  document.getElementById('fix').textContent = g.one_fix ? `${g.one_fix.text} (closes ${g.one_fix.paths_closed}, risk -${g.one_fix.risk_drop})` : '-';
+  const a = await (await fetch('/audit/verify')).json();
+  document.getElementById('audit').innerHTML = a.ok ? '<span class="ok">verified</span>' : `<span class="bad">BROKEN at row ${a.broken_at}</span>`;
+  const incs = await (await fetch('/incidents')).json();
+  document.getElementById('incs').innerHTML = incs.reverse().map(i => `<div class="inc ${i.severity}">
+    <b>#${i.id} ${i.title}</b><br><small>${i.severity} · ${i.status} · policy ${i.policy}</small><br>
+    <small>Signals: ${i.signals.map(s => s.type + (s.score ? ' (score ' + s.score.score + ': ' + s.score.markers.join(', ') + ')' : '')).join(' → ')}</small><br>
+    <small>Runbook: ${i.runbook.map(s => (i.done.includes(s) ? '✔ ' : '') + s).join(' → ')}</small></div>`).join('');
+}
+tick(); setInterval(tick, 2000);
+</script></body></html>
