@@ -89,9 +89,12 @@ def _send(chat_id, text, buttons):
                       json={"chat_id": chat_id, "text": text, "reply_markup": keyboard(buttons)}, timeout=10)
     if not r.ok:
         print(f"[Sahayak] Telegram refused the message to {chat_id}: {r.status_code} {r.text[:200]}")
+    return r.ok, r.status_code
 
 
 def send_incident(inc):
+    """Returns one {"to", "ok", "status"} per phone (last 3 digits only) so the brain can audit delivery."""
+    sent = []
     chats = [c for c in [OWNER_CHAT_ID] + STAFF_CHAT_IDS if c]
     english = None                                 # reword once, not once per phone
     for chat in chats or ["(no OWNER_CHAT_ID / STAFF_CHAT_IDS in .env)"]:
@@ -104,9 +107,12 @@ def send_incident(inc):
             print(f"[Sahayak] would send to {chat}:\n{text}\n  buttons: {[b[0] for b in buttons]}\n")
             continue
         try:                                       # one phone failing must not stop the others
-            _send(chat, text, buttons)
+            ok, status = _send(chat, text, buttons)
+            sent.append({"to": "..." + str(chat)[-3:], "owner": chat == OWNER_CHAT_ID, "ok": ok, "status": status})
             if lang in ("kn", "hi"):
                 from sahayak.voice import send_voice_later
                 send_voice_later(chat, text.split("\n", 1)[1].split("\n\n", 1)[0], lang)  # skip code line and ticks
         except Exception as e:
             print(f"[Sahayak] could not send to {chat}: {e}")
+            sent.append({"to": "..." + str(chat)[-3:], "owner": chat == OWNER_CHAT_ID, "ok": False, "status": str(e)[:80]})
+    return sent

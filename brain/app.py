@@ -31,7 +31,9 @@ notifier = None                # set by Sahayak: a function(incident_dict) that 
 def notify(inc):
     if notifier:
         try:
-            notifier(incidents.public(inc))
+            sent = notifier(incidents.public(inc))
+            if sent:                       # who actually received it: checked by eval/check_session4.py
+                audit.append({"kind": "notify", "incident_id": inc["id"], "sent": sent})
         except Exception as e:            # never let a Telegram problem break detection
             audit.append({"kind": "notify_error", "error": str(e)})
 

@@ -29,3 +29,7 @@ for h in honey[-3:]:
     ev = h.get("evidence", {})
     print(f"       {h.get('ts', '')[:19]}  {ev.get('planted_in')}  {ev.get('user_agent', '')[:60]}")
 print("4b. Telegram paste: check that no new honeytoken hit appeared after you pasted the link.")
+print("\nLast Telegram deliveries (ok = Telegram accepted it for that phone):")
+for n in [r for r in rows if r.get("kind") == "notify"][-5:]:
+    print(f"   incident {n['incident_id']}: " + ", ".join(
+        f"{'OWNER' if s.get('owner') else 'staff'} {s['to']} {'ok' if s['ok'] else 'FAILED ' + str(s['status'])}" for s in n["sent"]))
