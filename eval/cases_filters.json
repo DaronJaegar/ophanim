@@ -18,7 +18,17 @@
  {"criteria": {"from": "hr@hospital.org"}, "action": {"addLabelIds": ["Label_11"]}},
  {"criteria": {"subject": "conference"}, "action": {"removeLabelIds": ["UNREAD"]}},
  {"criteria": {"from": "github.com"}, "action": {"removeLabelIds": ["INBOX"]}},
- {"criteria": {"subject": "payment received"}, "action": {"addLabelIds": ["Label_12"]}}
+ {"criteria": {"subject": "payment received"}, "action": {"addLabelIds": ["Label_12"]}},
+ {"criteria": {"from": "newsletter"}, "action": {"removeLabelIds": ["INBOX"]}},
+ {"criteria": {"from": "noreply"}, "action": {"addLabelIds": ["Label_13"]}},
+ {"criteria": {"subject": "receipt"}, "action": {"addLabelIds": ["Label_14"]}},
+ {"criteria": {"subject": "appointment"}, "action": {"addLabelIds": ["STARRED"]}},
+ {"criteria": {"from": "linkedin.com"}, "action": {"removeLabelIds": ["INBOX", "UNREAD"]}},
+ {"criteria": {"query": "unsubscribe"}, "action": {"removeLabelIds": ["INBOX"]}},
+ {"criteria": {"subject": "lab report"}, "action": {"addLabelIds": ["Label_15"]}},
+ {"criteria": {"from": "rvce.edu"}, "action": {"addLabelIds": ["STARRED"], "removeLabelIds": ["SPAM"]}},
+ {"criteria": {"subject": "OTP"}, "action": {"addLabelIds": ["IMPORTANT"]}},
+ {"criteria": {"subject": "statement"}, "action": {"addLabelIds": ["Label_16"]}}
 ],
 "malicious": [
  {"criteria": {"query": "invoice"}, "action": {"forward": "billing.helpdesk7@gmail.com"}},

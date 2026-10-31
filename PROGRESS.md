@@ -168,7 +168,7 @@ Done: sections 5.3-5.7. Still to do: section 8.
 ### Phase 0 (now)
 - [ ] Ask organisers: starter code allowed? setup before event allowed? hotspot allowed? (If code is not allowed, use the repo only as a study guide and retype on the day.)
 - [ ] Add Bruce, Ayan, Aradhya as GitHub collaborators; each clones, makes venv, passes `pytest` and `python -m eval.run_eval`.
-- [ ] Add 10 real filters from your own Gmail to `eval/cases_filters.json` (conditions only).
+- [x] DONE 2026-10-31: 10 filters created in a real Gmail account and exported as `mailFilters.xml` (newsletter, noreply, receipt, appointment, linkedin.com, unsubscribe, lab report, rvce.edu, OTP, statement), converted to JSON and added to the benign list (now 30). They were set up by us for this test, not long-used filters. Result: set A 15/15 caught, 0/30 false alarms at thresholds 3 and 4. The new filters score 0-2 (digest); newsletter, linkedin, unsubscribe and OTP score 2 each. Account email from the export was not copied into the repo.
 - [ ] Paper-check the 12.45 table; hand-compute 26.2 and 6.41.
 - [ ] Share `CONTRACTS.md` in the team chat.
 - [ ] Create `.env` from `.env.example` with the hotspot IP (`ipconfig`) as `BRAIN_URL` and `BRAIN_IP`; allow Python through Windows Firewall (Private).
