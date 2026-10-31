@@ -287,7 +287,9 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] F1: Indian billing money words (gst, remittance, beneficiary, kyc, cheque, a/c, swift, imps, payout). Not "refund": it turned "archive Amazon refund mail" into a false alarm; that case stays in the eval as a guard.
 - [ ] Bait-link test 4a/4b: open the decoy link in Chrome (1 hit, `decoy-email`); paste it **only into Telegram Saved Messages, never the bot chat** (the bot would send it to the AI via Ask Sahayak); hit count must not rise.
 - [ ] Section B of the plan check: one item at a time, each needs Aaron's "go" (Windows hand test for Gate 2, reset script, BRAIN_TOKEN, ask level, digest, F2-F7, POP, /status, IT summary, reminders, link check, PC health).
-- Note: Ayan's demo PC is **Windows** now (Linux is out); the Gate 2 hand test needs a Windows PowerShell version (Section B).
+- Note: Ayan's demo PC is **Windows** now (Linux is out).
+- [x] Section B #1 written: `agent/hand_test_containment.ps1` (Windows Gate 2 hand test). Uses the real `agent/contain.py` with DRY_RUN=0 for that run only, checks google.com:443 blocked + brain:8000 reachable, always releases, prints ALL PASS. Also lists non-Windows programs with their own allow-outbound rule (they can bypass block-outbound). Parser-checked and dry-run checked only; **Ayan must run it** (Administrator PowerShell, brain running).
+- [ ] Ayan: `powershell -ExecutionPolicy Bypass -File agent\hand_test_containment.ps1 -BrainIp 10.215.200.40` -> ALL PASS screenshot.
 ### Phase 3 (Gate 2)
 - [x] Agent -> brain with Ayan (dry run): fake ransomware fired on decoy + entropy (2 of 3), incident #1 critical.
 - [x] Agent stopped -> `heartbeat_missing` after 16 s, merged into the same incident (< 20 s target met).
