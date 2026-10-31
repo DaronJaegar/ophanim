@@ -10,7 +10,7 @@ code is not allowed, use this only as a study guide before the event and type yo
 | `agent/` | Ayan (C) | `python -m agent.testfolder make <folder>` then `sudo -E python -m agent.agent` |
 | `sahayak/` | Aradhya (D) | `python -m sahayak.bot` |
 | `eval/` | Aaron (B) | `python -m eval.run_eval` |
-| `tests/` | everyone | `python -m pytest tests -q` (11 tests: graph numbers, scoring, correlation, detector, signed buttons) |
+| `tests/` | everyone | `python -m pytest tests -q` (21 tests: graph numbers, scoring, correlation, detector, signed buttons, messages, roles, Paisa Pause) |
 | `common/` | everyone | settings (`config.py`) and the shared event format (`contracts.py`) |
 
 Setup: `python -m venv .venv`, activate it, `pip install -r requirements.txt`, copy `.env.example` to `.env`

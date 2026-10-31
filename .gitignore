@@ -5,3 +5,4 @@ token_*.json
 __pycache__/
 .venv/
 .pytest_cache/
+.sahayak_used_taps
