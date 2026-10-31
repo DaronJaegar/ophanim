@@ -34,6 +34,12 @@ TEMPLATES = {
     "heartbeat_missing": {
         "en": "The protection on the front-desk computer stopped responding.\nSomeone may have switched it off on purpose.\nTap Call my IT helper.",
     },
+    "agent_stopping": {
+        "en": "The protection on the front-desk computer was switched off.\nIf nobody at the clinic did this, someone may be hiding an attack.\nTap Call my IT helper.",
+    },
+    "backup_old": {
+        "en": "The newest copy of your clinic files is more than a week old.\nIf files get locked, you would lose a week of work.\nTap Show me how to make a fresh copy today.",
+    },
     "bank_change_request": {
         "en": "Don't pay yet. This message says a vendor's bank details changed.\nThat is the most common way clinics lose money.\nTap Check with the vendor: we'll ask on the number you saved.",
         "hi": "अभी भुगतान न करें। इस संदेश में लिखा है कि विक्रेता का बैंक खाता बदल गया है।\nक्लिनिक ज़्यादातर ऐसे ही पैसे खोते हैं।\n'Check with the vendor' दबाएँ: हम उनके सेव किए नंबर पर पूछेंगे।",
@@ -113,6 +119,8 @@ HOW = {
     "sendas_added": "Gmail > Settings > See all settings > Accounts > Send mail as > delete the address you don't know.",
     "file_public": "Drive > right-click the folder > Share > General access > Restricted.",
     "heartbeat_missing": "Don't restart the PC. Call your IT helper and say the safety check stopped.",
+    "agent_stopping": "Ask at the front desk if anyone switched off Sahayak's protection. If not, don't use the PC and call your IT helper.",
+    "backup_old": "Copy the clinic files folder to the backup drive (or ask your IT helper). Do it every week.",
 }
 
 WHY = {
@@ -120,10 +128,13 @@ WHY = {
     "ransomware_suspected": "Ransomware locks your files and asks for money. Cutting the PC off stops it reaching your other computers.",
     "bank_change_request": "Fraudsters copy a vendor's email and ask you to pay a new account. One call to the number you already have stops it.",
     "honeytoken_hit": "We hid a fake bank login in your files. Only an intruder would open it.",
+    "agent_stopping": "Attackers often switch off protection first, so nothing warns you while they lock your files.",
+    "backup_old": "A recent copy of your files means locked files can simply be put back, without paying anyone.",
     "_default": "Someone may be inside your clinic's accounts. Following the steps keeps your money and patient data safe.",
 }
 
 ACK_TEXT = "Thank you. Leave it on. Your IT helper will take it from here."
+RESTORE_OFFER = "The PC is back online. Do you want us to put the locked files back from the backup?"
 
 # Whole words or word starts only, so "report", "important" and "support" don't trip "port".
 JARGON = ["ip address", "ip", "port", "ports", "mac address", "dns", "malware", "payload", "oauth", "api",

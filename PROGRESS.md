@@ -2,7 +2,7 @@
 
 Prepared for: Aaron (Module B, brain + console + eval). Last updated: 2026-10-31 (evening).
 Project folder: `C:\Users\aaron\Downloads\chakravyuh-starter\chakravyuh`
-GitHub: https://github.com/DaronJaegar/ophanim (**public**). Local `main` = `origin/main` at `9ac5b58`; nothing uncommitted except this file.
+GitHub: https://github.com/DaronJaegar/ophanim (**public**). `origin/main` = `7da484f` (pushed 2026-10-31); only this file has changed since.
 Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-lexical-whale.md`
 
 ---
@@ -51,7 +51,7 @@ Team: Bruce = A (account sensors), Aaron = B (brain + console + eval), Ayan = C 
 ---
 
 ## 4. What the code contains (per module, with state)
-Run all commands from the project folder. `pytest`: **22 passed** (test_brain 4, test_brain_flow 3, test_detector 3, test_sahayak 12).
+Run all commands from the project folder. `pytest`: **32 passed** (test_brain 4, test_brain_flow 7, test_detector 7, test_sahayak 14).
 
 ### 4.1 Brain (Aaron) - `brain/`
 - `app.py`: `POST /events`, `POST /actions`, `POST /heartbeat`, `GET /agent/commands`, `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, honeytoken router mount, background heartbeat watcher (5 s tick, 15 s silence = `heartbeat_missing`), Sahayak notifier plugged in at startup. Aaron's fixes: section 5.3 and 7.1.
@@ -76,6 +76,16 @@ New `sensors/demo_files.py` (2026-10-31): `python -m sensors.demo_files` writes 
 `detector.py` (entropy, 2-of-3 rule, decoys, skip extensions), `contain.py` (nftables on Linux, netsh on Windows, DRY_RUN), `agent.py` (watchdog, heartbeat every 5 s, command poll every 3 s, fire = contain first then report), `fake_ransomware.py` (refuses without marker file), `testfolder.py` (make / restore), `upgrades.py` (`top_writer_now`, `backup_age_days`).
 State: detector tests pass (3); containment never run for real; defaults to `DRY_RUN=1`. No commits from Ayan on GitHub yet.
 New `agent/hand_test_containment.sh` (2026-10-31): `sudo bash agent/hand_test_containment.sh <brain-ip>` runs the same 7 nft commands as `contain.py`, checks google.com fails and `<brain>/graph` still answers, and always deletes the table afterwards (also on Ctrl+C). Prints ALL PASS before Ayan sets `DRY_RUN=0`. Syntax-checked only; not run on Linux yet.
+**Level 3 + upgrades written (2026-10-31, by Aaron for Ayan; Ayan to review and run on Linux):**
+- `fire()`: contain first, then **suspend** the process writing most right now (`upgrades.top_writer_now`, frozen not killed; `SUSPEND=1`); event carries `suspended_process`, `suspended_pid`, `backup_age_days`.
+- **Backup-age check** at start-up: prints the newest backup's age; older than 7 days (or missing) -> `backup_old` event (low, never merges).
+- **Live signal meter** (`SIGNAL_METER=1`): one terminal line with 3 dots (decoy / random writes / renames) and `[watching | FIRED | CONTAINED]`; plain `[X]` fallback on consoles without Unicode.
+- **Extension-change signal** in `detector.py`: 5 renames to an unusual extension (`.txt -> .locked`) count as a rename burst; familiar ones (`.jpeg -> .jpg`, Office `.tmp`) never count. 2-of-3 rule unchanged.
+- **Agent token**: sends `X-Agent-Token` on every call when `AGENT_TOKEN` is set.
+- **Tamper alarm**: Ctrl+C / SIGTERM posts `agent_stopping` before exiting.
+- **Restore helper**: `restore` command copies `<WATCH_DIR>_backup` over the folder (refuses unless the backup holds the test marker), re-plants decoys, re-arms the detector, reports `files_restored`.
+- `agent/install.sh <brain-ip> [--service]` (Linux, systemd) and `agent/install.ps1 -BrainIp <ip> [-Service]` (Windows, NSSM): syntax-checked only.
+- Verified on Aaron's laptop (Windows, dry run, isolated brain): token rejects forged heartbeat (401); fake ransomware fired after 4 files (decoy + entropy); owner release; staff restore refused (403), owner restore put back 60 notes, 0 locked left; meter fallback works. Suspension not run on Windows (python.exe is SAFE there).
 
 ### 4.4 Sahayak (Aradhya) - `sahayak/`
 Aradhya's update (`e2091ea`, merged in `9ac5b58`, 617 lines changed):
@@ -147,13 +157,16 @@ Re-run 2026-10-31 evening after all merges: graph 12.45 / 4 open, `/audit/verify
 | `TELEGRAM_TOKEN` | Valid (`@sahayak_incognito_bot`) |
 | `SECURITY_CODE` | Team-chosen code set (no longer the public `MANGO-42` default); value kept out of this public file |
 | `HMAC_SECRET` | Long random value set, no `#` (the `env()` reader cuts at `#`) |
-| `BRAIN_URL` / `BRAIN_IP` | Current Wi-Fi IP; must be redone on the event hotspot |
+| `BRAIN_URL` / `BRAIN_IP` | `10.215.200.40` (current Wi-Fi). Redo whenever the network changes, and on the event hotspot (then re-run `python -m sensors.demo_files`, because the decoy links use it) |
+| `IT_CHAT_ID` | **Set** (by Aaron, 2026-10-31) |
+| `POLL_SECONDS` | **10** (demo speed). Note: an editor save once reverted `.env` (POLL back to 30, honeytokens back to CHANGE-ME); restored and honeytokens regenerated. Close `.env` without saving before editing elsewhere |
+| `CHAT_LANGS` | **Empty.** Set e.g. `<owner chat id>:kn` to demo the Kannada alert and voice note |
+| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | **Empty** = templates only (works fine). Optional, last in Aradhya's order |
 | Windows Firewall | Inbound Allow for Python 3.13 (Private, Public); venv python uses the same interpreter |
 | `OWNER_CHAT_ID`, `STAFF_CHAT_IDS` | **Set** (owner = Aradhya, staff = Ayan, from the chats that messaged the bot). From now on every incident sends real Telegram messages to their phones. |
 | `VENDOR_CHAT_IDS` | **Empty.** No vendor chat has messaged the bot yet. Bruce or Aaron sends `/start`, then add `name:chat_id` |
 | `HONEY_TOKENS` | **Set**: two random 12-character tokens (decoy-doc, decoy-email). Brain restarted to load them |
 | `IT_CHAT_ID`, `CLINIC_NAME` | New, optional; not in `.env` (defaults: empty, "Sunrise Clinic") |
-| `POLL_SECONDS` | 30 (set 10 for the demo) |
 
 ### 5.9 Risk numbers paper-checked
 - Start **12.45** = 4.03 (gmail->bank) + 3.02 (gmail->invoices) + 3.00 (drive) + 2.40 (pc).
@@ -174,7 +187,7 @@ Reminders: 7-day token expiry in Testing mode (delete `token_basic.json` and sig
 ### Ayan (C)
 Has messaged the bot (chat ID known). No commits yet.
 Needs: Linux laptop/VM as front-desk PC (an Ubuntu 24.04 ISO and a Kali VirtualBox image are already in Aaron's Downloads if a VM is used); Python 3.11 + `watchdog`/`psutil`; `nftables`; `python -m agent.testfolder make`; hand-test the 7 nft commands with `agent/hand_test_containment.sh` BEFORE `DRY_RUN=0`; his own `.env` (`WATCH_DIR`, `DEVICE_ID`, `BRAIN_URL`/`BRAIN_IP`).
-Not yet wired: process suspension in `fire()`, `backup_age_days` at startup, agent token (`X-Agent-Token`), `agent_stopping` event, extension-change signal, Windows service, install script.
+Code: all Level 3 items and upgrades are now written (section 4.3); Ayan should `git pull`, read them, and run them on the Linux PC. To turn on the agent token, put the same `AGENT_TOKEN` in the brain's and the agent's `.env` (leave both empty until then, or the agent is refused).
 To measure: median files locked and seconds to contain over 5 runs; the four false-trigger tests on a real folder.
 
 ### Aradhya (D)
@@ -190,15 +203,19 @@ Done: sections 5.1-5.9. Still to do: section 8.
 ## 7. Issues found after reading docs 04, 06, 07
 1. **FIXED:** `save_evidence` is marked done automatically in `post_event`; test added.
 2. **FIXED by Aradhya (`e2091ea`):** voice notes are now sent from `notify.py` for `hi`/`kn` chats.
-3. **Open:** process suspension and backup-age check are not enabled in `agent/agent.py` (Ayan's Level 3 items).
+3. **Written (2026-10-31):** process suspension and backup-age check are in `agent/agent.py`; not yet run on Linux.
 4. **Open:** the brain checks `by` only on `release_pc`; other actions are trusted from the bot (which enforces roles).
 5. **Accepted:** `confirm_with_owner` and `report` only tick off; the incident closes when all steps are tapped.
-6. **Open:** no agent authentication on `/heartbeat`, `/agent/commands`, `/events` (Review 2 upgrade, STRIDE spoofing answer).
+6. **Written (2026-10-31):** agent token (`AGENT_TOKEN` + `X-Agent-Token`) checked on `/heartbeat`, `/agent/commands` and agent `/events`; off until both `.env` files set it.
 7. **Open:** `POLL_SECONDS=10` needed for the 45 s alert requirement.
 8. **Open:** Windows containment path (`netsh`) is untested; Linux is the recommended demo PC.
 9. **Open:** `python.exe` is in `SAFE` in `upgrades.py`, so suspension would skip the fake ransomware on a Windows PC.
 10. **New:** the repo is public and `.env.example` now holds the real clinic Gmail address and a LAN IP (from `e2091ea`). No secrets leaked, but consider putting placeholders back or making the repo private if the organisers allow.
-11. **New:** if two brain servers run at once (seen on ports 8000 and 8001), sensors and the agent may post to the wrong one. Run exactly one brain on 8000.
+11. **New:** if two brain servers run at once (seen on ports 8000 and 8001), sensors and the agent may post to the wrong one. Run exactly one brain on 8000. "Errno 10048 ... only one usage of each socket address" means a brain is already running on 8000.
+12. **New (found 2026-10-31):** the "one fix" only models prevention. During a live public share it still says "2-step login" (the incident's Make private button is the real answer), and with every edge live every fix drops Risk by 0. Idea: when the best drop is 0 or an incident is open, show "Follow the incident steps first".
+13. **New:** a honeytoken hit marks Attacker -> Gmail, but the decoy doc lives in Drive; arguably it should mark Attacker -> Records folder. Decide with Bruce.
+14. **FIXED:** CONTRACTS.md now lists `bank_change_request` with entity `vendor:payment`, plus the new `agent_stopping`, `backup_old`, `files_restored`, `restore_files` and the agent token.
+15. **Note:** with the chat IDs set, every incident now sends real Telegram messages to Aradhya and Ayan. Warn them before tests.
 
 ---
 
@@ -217,26 +234,45 @@ Done: sections 5.1-5.9. Still to do: section 8.
 - [x] Telegram token, team `SECURITY_CODE`, random `HMAC_SECRET`.
 - [x] `OWNER_CHAT_ID` (Aradhya) and `STAFF_CHAT_IDS` (Ayan) in `.env`.
 - [ ] `VENDOR_CHAT_IDS`: needs one person to `/start` the bot as the vendor.
+- [x] `IT_CHAT_ID` set.
+- [x] `BRAIN_URL` / `BRAIN_IP` = current IP (`10.215.200.40`); `POLL_SECONDS=10`.
 - [x] Random `HONEY_TOKENS` in `.env`.
 - [x] Demo files generated (`python -m sensors.demo_files`).
 - [ ] Upload them to the clinic Drive + send the decoy email (manual, about 2 min).
 - [ ] 2-step login off on the clinic account (manual, Google account settings).
 - [x] Containment hand-test script written for Ayan.
-- [ ] Ayan's Linux PC: agent installed, `hand_test_containment.sh` prints ALL PASS.
+- [x] Ayan's agent installed and reporting to the brain (first live event 2026-10-31 12:24 UTC, see section 13).
+- [ ] Ayan's `hand_test_containment.sh` prints ALL PASS (not confirmed yet: ask for the screenshot).
 - [x] Commit this updated `PROGRESS.md` (with the Phase 1 console changes).
 ### Phase 1 (Review 1)
 - [x] Console polish (2026-10-31): "Top attack paths" list (top 3 open paths from `/paths`, with risk); click a box or arrow to see its factors, e.g. "breached password 0.8 × no 2-step login 0.7 = 0.56" (kept across the 2 s refresh). `/graph` edges now carry `factors` (CONTRACTS.md updated).
 - [x] Projector check (headless Chrome, 1920x1080): graph now fits its panel, Attacker box no longer cut off, edge numbers readable, larger side text. Clean state shows 12.45 / 4 open / closes 2.
 - [x] Event over the network IP (from Aaron's own laptop): filter event -> score 7 -> incident #1 high -> two red edges -> Risk 18.6; during the attack the one fix switches to "Make the records folder private" (2-step no longer helps once the attacker is inside). Reset to clean afterwards.
-- [ ] Same test from a teammate's laptop on the event hotspot (proves the firewall path).
+- [x] Events from teammates' laptops over the LAN: Bruce's `sensors.run` and Ayan's agent both posted to Aaron's brain at `10.215.200.40` (section 13). Repeat once on the event hotspot.
 - [ ] Rehearse the 30-second formula explanation and the architecture slide (script given in chat 2026-10-31).
 ### Phase 2 (Gate 1)
-- [ ] First live loop: brain + `sensors.run` + `sahayak.bot`, hand-made filter in the clinic Gmail -> score -> incident -> Sahayak -> tap -> delete -> re-read -> grey.
-- [ ] Onboarding baseline (Bruce's first-snapshot rule already treats existing filters as normal).
-- [ ] Venue benign baseline: alerts per hour.
-- [ ] Three clean runs, alert < 45 s, `/audit/verify` ok; tag `gate1`.
+Aradhya's Level 2 order (doc 07), mapped here. All four are **written in code; none has run live on real phones yet.**
+Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 --port 8000`, `python -m sensors.run`, `python -m sahayak.bot`. The brain sends the alerts itself (it loads `sahayak.notify` at startup); the bot is needed to receive taps.
+- [x] Prerequisites: `POLL_SECONDS=10`; current IP in `.env`; attacker forwarding address **accepted** in the clinic Gmail. (Delete `chakravyuh.db` before each run.)
+- [x] Detection half of item 1: Bruce's real filters reached the brain as `filter_added` and merged into the incident.
+- [x] A signed button tap from a real phone reached the brain (Ayan tapped "Okay" on the ransomware alert -> `ack` in the audit log).
+- [ ] Demo filter must also **skip the inbox**: the current invoice filter only forwards, so it scores **5** ("sends mail to another account" 3 + "invoice" 2). With "Skip the Inbox (Archive it)" ticked it scores **7**.
+- [ ] **1. Taps do real things (critical).** Not done yet: both of Bruce's filters are still in Gmail and no remove action is in the audit log. Bruce makes the invoice filter by hand -> `filter_added -> 200` -> console red, Risk 18.6 -> Aradhya's phone gets the alert -> she taps Remove it -> phone says "We checked: it's gone", filter gone from Gmail, path grey, `/audit/verify` ok. Code: `rm` -> `remove_filter` -> `delete_filter` (evidence, delete, re-read).
+- [ ] **2. Explanation buttons** on real phones: What does this mean? / Show me how / Call my IT helper (the last needs `IT_CHAT_ID`).
+- [ ] **3. Paisa Pause** on real phones: forward "our bank account has changed" -> "Don't pay yet" -> Check with the vendor -> vendor taps no -> owner sees "FAKE INVOICE" (needs `VENDOR_CHAT_IDS`).
+- [ ] **4. AI wording (optional, last).** Set `LLM_*` to any OpenAI-compatible endpoint; check the reworded alert keeps its button name and that LLM-off still works.
+- [ ] Kannada/Hindi demo chat via `CHAT_LANGS`; voice note plays.
+- [x] Onboarding baseline (Bruce's first-snapshot rule treats existing filters as normal).
+- [x] Venue baseline tool: `python -m eval.venue_baseline [--since <ISO time>]` reads the audit log (read-only, safe while the brain runs) and prints alerts/asks per hour.
+- [ ] Venue benign baseline measured: run brain + sensors during normal use only (no tests), then run the tool with `--since` the start time.
+- [ ] Join-up: the full email story 3 times on real phones from a clean reset, alert < 45 s, `/audit/verify` ok; tag `gate1`.
 ### Phase 3 (Gate 2)
-- [ ] Agent -> brain with Ayan; contained < 10 s and still heartbeating; heartbeat-missing < 20 s joins the incident.
+- [x] Agent -> brain with Ayan (dry run): fake ransomware fired on decoy + entropy (2 of 3), incident #1 critical.
+- [x] Agent stopped -> `heartbeat_missing` after 16 s, merged into the same incident (< 20 s target met).
+- [x] Email + PC merge on live data: two real `filter_added` events joined incident #1 (PC first, then email).
+- [ ] Real containment: `DRY_RUN=0` on Ayan's PC, google blocked, brain still reachable, contained < 10 s, still heartbeating.
+- [x] Owner Release tap from a real phone reaches the brain (`release_pc` by Aradhya's chat, audit row 10; PC edges cleared). Dry run, so nothing was really cut off.
+- [ ] Owner taps Release with `DRY_RUN=0` -> PC back online in 3-5 s.
 - [ ] Three clean kill-chain runs; tag `gate2`.
 ### Phase 4
 - [ ] Expert view (MITRE IDs T1114.003, T1564.008, T1486, T1078, T1562.001), live audit panel, `GET /incidents/<id>/report`, "Next fix" after each fix.
@@ -250,7 +286,7 @@ Done: sections 5.1-5.9. Still to do: section 8.
 ---
 
 ## 9. Files: pushed vs local
-Committed locally on top of `9ac5b58`: console polish, `factors` in `/graph`, `sensors/demo_files.py`, `agent/hand_test_containment.sh`, `.gitignore` (`demo_files/`), this `PROGRESS.md`. Push status: see `git status`.
+Pushed to `main` as `7da484f`: console polish, `factors` in `/graph`, `sensors/demo_files.py`, `agent/hand_test_containment.sh`, `.gitignore` (`demo_files/`), PROGRESS.md. Since then only this PROGRESS.md update is local (not yet committed).
 Local only, never pushed (git-ignored): `.env`, `credentials.json`, `token_basic.json`, `chakravyuh.db`, `.venv`, `.pytest_cache`, `.sahayak_used_taps`, `demo_files/` (holds the honeytoken links).
 
 ## 10. How to run
@@ -274,7 +310,22 @@ Laptop roles on the day: Aaron = brain + `sensors.run` + `sahayak.bot` (holds cr
 - Sahayak: 12 tests; code header; double tap rejected (also after a bot restart); staff Release refused; unknown phone refused; Remove it gone in Gmail; Paisa Pause "FAKE INVOICE" reaches owner; LLM off works; Kannada note plays.
 
 ## 12. Known limits of what has been verified
-- Executed: brain, detector, Sahayak unit tests, eval sets, Google auth (read-only calls), Telegram token (`getMe`).
-- Not yet executed: `sensors.run` posting to the brain, the bot sending real messages, real firewall containment, the hotspot network.
+- Executed: brain, detector, Sahayak unit tests, eval sets, Google auth (read-only calls), Telegram token (`getMe`), and the live run in section 13 (Bruce's sensors, Ayan's agent in dry run, a real phone tap).
+- Not yet executed: a "Remove it" tap deleting a real filter, real firewall containment (`DRY_RUN=0`), owner Release, Paisa Pause with a vendor, the event hotspot.
 - Console loaded (HTTP 200) but not checked visually in a browser.
 - Sets B and C are self-written sanity checks. Hindi/Kannada texts are unverified drafts.
+
+## 13. Live run log
+### 2026-10-31, 12:24-12:28 UTC (17:54-17:58 IST): first multi-laptop run
+Read from that run's audit log (`chakravyuh.db`, chain `{"ok": true}`, 9 rows):
+
+| Row | What happened | Shows |
+| --- | --- | --- |
+| 1-2 | Ayan's agent: `ransomware_suspected` on `device:frontdesk-pc`, signals decoy + entropy (2 of 3), `contained: true` (dry run: commands printed, 0.0 s) -> incident #1 **critical** | Agent -> brain over the LAN works; detector fires on the real folder |
+| 3 | `ack` by Ayan's chat (staff) on incident #1 | Alert reached a real phone; the signed tap reached the brain via `sahayak.bot` |
+| 4-5 | `heartbeat_missing` after **16 s**, merged into #1 | Dead-agent detection < 20 s |
+| 6-9 | Two real `filter_added` from Bruce's `sensors.run`, both merged into #1 | Gmail sensor -> brain works; email + PC merge on live data |
+| 10 | `release_pc` by Aradhya's chat (owner) | Owner-only Release tap works from a real phone |
+
+Not covered by this run: Remove it (both filters still in Gmail), the other owner steps, real containment.
+Gmail now: forwarding address **accepted**; 2 filters: `invoice` -> forward (scores 5; add "skip inbox" for 7) and `from:no-reply@accounts.google.com` -> Trash (scores 4, "ask"). Drive: still empty.

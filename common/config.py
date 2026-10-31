@@ -28,6 +28,9 @@ LLM_MODEL = env("LLM_MODEL")
 DEVICE_ID = env("DEVICE_ID", "frontdesk-pc")
 WATCH_DIR = env("WATCH_DIR", "./ClinicFiles")
 DRY_RUN = env("DRY_RUN", "1") == "1"
+AGENT_TOKEN = env("AGENT_TOKEN")                       # same value on brain + agent; empty = not checked
+SUSPEND = env("SUSPEND", "1") == "1"                    # agent: freeze the process doing the writing
+SIGNAL_METER = env("SIGNAL_METER", "1") == "1"          # agent: live 3-dot signal line in the terminal
 
 # Who uses what (from the onboarding chat). Used by correlation.
 PEOPLE = {

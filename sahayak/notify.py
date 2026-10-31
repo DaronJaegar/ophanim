@@ -18,6 +18,8 @@ BUTTONS = {          # signal type -> [(label, code)]; codes are decoded by the 
     "honeytoken_hit": [("Start the fix", "st"), ("Call my IT helper", "it"), ("What does this mean?", "why")],
     "ransomware_suspected": [("Okay, I won't switch it off", "ack"), ("Call my IT helper", "it")],
     "heartbeat_missing": [("Call my IT helper", "it"), ("Show me how", "how")],
+    "agent_stopping": [("Call my IT helper", "it"), ("Show me how", "how"), ("What does this mean?", "why")],
+    "backup_old": [("Show me how", "how"), ("What does this mean?", "why")],
     "bank_change_request": [("Check with the vendor", "vv"), ("What does this mean?", "why")],
     "unknown": [("Call my IT helper", "it")],
 }

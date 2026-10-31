@@ -1,15 +1,22 @@
 """Ransomware detection: the 2-of-3 rule (Ayan, Module C).
 Signals: (1) a decoy file is touched, (2) newly written files look random (high entropy),
-(3) a burst of renames. Any 2 different signals within WINDOW seconds = ransomware."""
-import math, os, time
+(3) a burst of renames. Any 2 different signals within WINDOW seconds = ransomware.
+Upgrade: files renamed to an unusual extension (.txt -> .locked) strengthen the rename signal:
+EXT_BURST of them count as a rename burst, because normal bulk renames keep familiar extensions."""
+import math, os, threading, time
 from collections import Counter, deque
 
 WINDOW = 60
 ENTROPY_LIMIT = 7.5          # bits per byte; random/encrypted data is close to 8.0
 RENAME_BURST = 20            # renames inside WINDOW
+EXT_BURST = 5                # renames to an unusual extension inside WINDOW (also a rename burst)
 ENTROPY_HITS = 5             # high-entropy writes inside WINDOW
 DECOY_NAMES = ["!000_Patient_Records_2026.xlsx", "!000_Accounts_Backup.docx", "zzz_Salary_Register.xlsx"]
 SKIP_EXT = {".zip", ".jpg", ".jpeg", ".png", ".mp4", ".gz", ".7z", ".rar", ".pdf"}   # already random-looking
+KNOWN_EXT = {"", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".ppt", ".pptx", ".pdf", ".odt", ".ods",
+             ".rtf", ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".heic", ".webp", ".mp3", ".wav",
+             ".mp4", ".mov", ".avi", ".zip", ".7z", ".rar", ".gz", ".tar", ".xml", ".json", ".html", ".htm",
+             ".bak", ".tmp", ".log", ".md"}   # renames TO these are everyday (Office saves, downloads, photos)
 
 def shannon_entropy(data: bytes) -> float:
     if not data:
@@ -24,11 +31,21 @@ def file_entropy(path, size=4096):
     except OSError:
         return 0.0
 
+def unusual_extension_change(path, dest):
+    old, new = os.path.splitext(path)[1].lower(), os.path.splitext(dest)[1].lower()
+    return old != new and new not in KNOWN_EXT
+
 class Detector:
     def __init__(self, now=time.time):
         self.now = now
-        self.signals = {"decoy": deque(), "entropy": deque(), "rename": deque()}
-        self.fired = False
+        self.lock = threading.RLock()      # the watcher thread and the signal meter both read the queues
+        self.reset()
+
+    def reset(self):
+        """Forget every signal (after a release or a restore), so the rule can fire again."""
+        with self.lock:
+            self.signals = {"decoy": deque(), "entropy": deque(), "rename": deque(), "extension": deque()}
+            self.fired = False
 
     def _trim(self):
         cutoff = self.now() - WINDOW
@@ -36,31 +53,39 @@ class Detector:
             while q and q[0] < cutoff:
                 q.popleft()
 
+    def counts(self):
+        with self.lock:
+            self._trim()
+            return {k: len(q) for k, q in self.signals.items()}
+
     def active(self):
-        self._trim()
+        c = self.counts()
         return {
-            "decoy": len(self.signals["decoy"]) > 0,
-            "entropy": len(self.signals["entropy"]) >= ENTROPY_HITS,
-            "rename": len(self.signals["rename"]) >= RENAME_BURST,
+            "decoy": c["decoy"] > 0,
+            "entropy": c["entropy"] >= ENTROPY_HITS,
+            "rename": c["rename"] >= RENAME_BURST or c["extension"] >= EXT_BURST,
         }
 
     def on_event(self, kind, path, dest=None):
         """kind: 'modified' | 'moved' | 'deleted' | 'created'. Returns True the first time the rule fires."""
-        t = self.now()
-        names = [os.path.basename(path)] + ([os.path.basename(dest)] if dest else [])
-        if any(n in DECOY_NAMES for n in names):
-            self.signals["decoy"].append(t)
-        if kind == "moved":
-            self.signals["rename"].append(t)
-        target = dest or path
-        if kind in ("modified", "created", "moved") and os.path.splitext(path)[1].lower() not in SKIP_EXT \
-                and os.path.isfile(target) and file_entropy(target) > ENTROPY_LIMIT:
-            self.signals["entropy"].append(t)
-        a = self.active()
-        if not self.fired and sum(a.values()) >= 2:
-            self.fired = True
-            return True
-        return False
+        with self.lock:
+            t = self.now()
+            names = [os.path.basename(path)] + ([os.path.basename(dest)] if dest else [])
+            if any(n in DECOY_NAMES for n in names):
+                self.signals["decoy"].append(t)
+            if kind == "moved":
+                self.signals["rename"].append(t)
+                if dest and unusual_extension_change(path, dest):
+                    self.signals["extension"].append(t)
+            target = dest or path
+            if kind in ("modified", "created", "moved") and os.path.splitext(path)[1].lower() not in SKIP_EXT \
+                    and os.path.isfile(target) and file_entropy(target) > ENTROPY_LIMIT:
+                self.signals["entropy"].append(t)
+            a = self.active()
+            if not self.fired and sum(a.values()) >= 2:
+                self.fired = True
+                return True
+            return False
 
 def plant_decoys(folder):
     for name in DECOY_NAMES:

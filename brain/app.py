@@ -1,13 +1,13 @@
 """The brain: one FastAPI app every module talks to (Aaron, Module B).
 Run:  uvicorn brain.app:app --host 0.0.0.0 --port 8000
 """
-import asyncio, time
+import asyncio, hmac, time
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from common.config import CLINIC_DOMAIN, DEVICE_ID, OWNER_CHAT_ID
+from common.config import CLINIC_DOMAIN, DEVICE_ID, OWNER_CHAT_ID, AGENT_TOKEN
 from brain import graph as G
 from brain.scoring import score_filter
 from brain.audit import AuditLog
@@ -51,6 +51,12 @@ class Action(BaseModel):
 class Heartbeat(BaseModel):
     device: str
 
+def _check_agent(token, what):
+    """STRIDE spoofing: when AGENT_TOKEN is set, only the real agent may report, heartbeat or fetch commands."""
+    if AGENT_TOKEN and not hmac.compare_digest((token or "").encode(), AGENT_TOKEN.encode()):
+        audit.append({"kind": "rejected_agent", "what": what})
+        raise HTTPException(401, "unknown agent")
+
 def _recent_change(seconds=24 * 3600):
     cutoff = time.time() - seconds
     return any(t >= cutoff for t in recent_changes)
@@ -67,11 +73,17 @@ def _remove_filters(inc):
     return removed
 
 @app.post("/events")
+def events_route(e: Event, x_agent_token: str = Header(default="")):
+    if e.source == "agent":
+        _check_agent(x_agent_token, "event:" + e.type)
+    return post_event(e)
+
 def post_event(e: Event):
+    """Also called directly by the heartbeat watcher and the honeytoken route (no token needed inside)."""
     ev = e.model_dump()
     audit.append({"kind": "event", **ev})
     sig = {"type": e.type, "entity": e.entity, "evidence": e.evidence}
-    inc, title, severity, policy = None, None, None, "tap"
+    inc, title, severity, policy, merge = None, None, None, "tap", True
 
     if e.type == "filter_added":
         s = score_filter(e.evidence.get("filter", {}), CLINIC_DOMAIN, _recent_change())
@@ -100,12 +112,19 @@ def post_event(e: Event):
         G.mark_live(graph, "attacker", "pc"); G.mark_live(graph, "pc", "records")
     elif e.type == "heartbeat_missing":
         severity, title = "high", "The protection on the front-desk PC stopped responding"
+    elif e.type == "agent_stopping":                     # tamper alarm: the agent was stopped on purpose
+        severity, title = "high", "The protection on the front-desk PC was switched off"
+        last_heartbeat.pop(e.entity.split(":", 1)[-1], None)   # already alerted: no second heartbeat alert
+    elif e.type == "backup_old":
+        severity, title, merge = "low", "The clinic's newest backup is old", False
+    elif e.type == "files_restored":                     # the agent finished a restore: logged, no new alert
+        return {"ok": True, "recorded": e.type}
     elif e.type == "bank_change_request":
         severity, title = "high", "A vendor's bank details changed - pause payment"
     else:
         return {"ok": True, "ignored": e.type}
 
-    inc, merged = incidents.add_signal(sig, severity, title, policy)
+    inc, merged = incidents.add_signal(sig, severity, title, policy, merge=merge)
     if e.type == "ransomware_suspected" and "contain_pc" not in inc["done"]:
         inc["done"].append("contain_pc")                 # the agent already contained the PC locally
     if "save_evidence" in inc["runbook"] and "save_evidence" not in inc["done"]:
@@ -130,10 +149,11 @@ def post_action(a: Action):
                 result["made_private"] = make_private(s["evidence"]["file_id"], audit)
         G.clear_live(graph, "attacker", "drive")
         G.apply_fix(graph, "make_private")
-    elif a.action in ("contain_pc", "release_pc"):
-        if a.action == "release_pc" and OWNER_CHAT_ID and a.by != OWNER_CHAT_ID:
-            raise HTTPException(403, "only the owner can release the PC")
-        agent_commands.setdefault(DEVICE_ID, []).append(a.action.split("_")[0])
+    elif a.action in ("contain_pc", "release_pc", "restore_files"):
+        if a.action != "contain_pc" and OWNER_CHAT_ID and a.by != OWNER_CHAT_ID:
+            raise HTTPException(403, "only the owner can do this")
+        agent_commands.setdefault(DEVICE_ID, []).append(a.action.split("_")[0])   # contain | release | restore
+        result["queued"] = True
         if a.action == "release_pc":
             G.clear_live(graph, "attacker", "pc"); G.clear_live(graph, "pc", "records")
     elif a.action == "step_done" and a.step:
@@ -149,12 +169,14 @@ def post_action(a: Action):
     return result
 
 @app.post("/heartbeat")
-def heartbeat(h: Heartbeat):
+def heartbeat(h: Heartbeat, x_agent_token: str = Header(default="")):
+    _check_agent(x_agent_token, "heartbeat")
     last_heartbeat[h.device] = time.time()
     return {"ok": True}
 
 @app.get("/agent/commands")
-def commands(device: str):
+def commands(device: str, x_agent_token: str = Header(default="")):
+    _check_agent(x_agent_token, "commands")
     cmds = agent_commands.pop(device, [])
     return {"commands": cmds}
 

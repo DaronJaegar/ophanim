@@ -46,3 +46,38 @@ def test_ransomware_marks_contain_pc_done_so_incident_can_close(client):
     for step in inc["runbook"]:
         client.post("/actions", json={"incident_id": inc["id"], "action": "step_done", "step": step})
     assert client.get("/incidents").json()[0]["status"] == "closed"
+
+def test_agent_token_required_when_set(client, monkeypatch):
+    monkeypatch.setattr(A, "AGENT_TOKEN", "s3cret-agent")
+    ev = {"source": "agent", "type": "ransomware_suspected", "entity": "device:frontdesk-pc", "evidence": {}}
+    assert client.post("/events", json=ev).status_code == 401
+    assert client.post("/heartbeat", json={"device": "frontdesk-pc"}).status_code == 401
+    assert client.get("/agent/commands", params={"device": "frontdesk-pc"}).status_code == 401
+    h = {"X-Agent-Token": "s3cret-agent"}
+    assert client.post("/events", json=ev, headers=h).status_code == 200
+    assert client.post("/heartbeat", json={"device": "frontdesk-pc"}, headers=h).status_code == 200
+    gmail = {"source": "gmail", "type": "filter_added", "entity": "gmail:clinic", "evidence": {"filter": FILTER}}
+    assert client.post("/events", json=gmail).status_code == 200            # sensors are not agents
+    assert any(r["body"].get("kind") == "rejected_agent" for r in client.get("/audit").json()["rows"])
+
+def test_agent_stopping_alerts_once_and_joins_the_incident(client):
+    _event(client, "ransomware_suspected", "device:frontdesk-pc")
+    client.post("/heartbeat", json={"device": "frontdesk-pc"})
+    r = _event(client, "agent_stopping", "device:frontdesk-pc")
+    assert r["merged"] and r["incident"]["signals"][-1]["type"] == "agent_stopping"
+    assert "frontdesk-pc" not in A.last_heartbeat          # the heartbeat watcher won't alert a second time
+
+def test_old_backup_stays_its_own_incident(client):
+    old = _event(client, "backup_old", "backup:frontdesk-pc", {"backup_age_days": 12})["incident"]
+    assert old["severity"] == "low" and old["runbook"] == []
+    r = _event(client, "ransomware_suspected", "device:frontdesk-pc")
+    assert not r["merged"] and r["incident"]["id"] != old["id"]
+    assert _event(client, "files_restored", "device:frontdesk-pc", {"files": 60})["recorded"] == "files_restored"
+
+def test_restore_is_owner_only_and_queues_the_agent(client, monkeypatch):
+    monkeypatch.setattr(A, "OWNER_CHAT_ID", "111")
+    monkeypatch.setattr(A, "agent_commands", {})
+    inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
+    assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "222"}).status_code == 403
+    assert client.post("/actions", json={"incident_id": inc["id"], "action": "restore_files", "by": "111"}).json()["queued"]
+    assert client.get("/agent/commands", params={"device": A.DEVICE_ID}).json()["commands"] == ["restore"]

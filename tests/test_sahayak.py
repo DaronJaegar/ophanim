@@ -136,3 +136,21 @@ def test_paisa_pause_detects_and_stays_its_own_incident():
     incs.add_signal({"type": "filter_added", "entity": "gmail:clinic", "evidence": {}}, "high", "t")
     _, merged = incs.add_signal({"type": "bank_change_request", "entity": bot.PAISA_ENTITY, "evidence": {}}, "high", "t")
     assert not merged
+
+
+def test_new_alerts_have_plain_words_and_buttons():
+    from sahayak.notify import BUTTONS
+    from sahayak.messages import HOW, WHY, RESTORE_OFFER
+    for t in ("agent_stopping", "backup_old"):
+        assert jargon_ok(TEMPLATES[t]["en"]) and t in BUTTONS and t in HOW and t in WHY, t
+    assert jargon_ok(RESTORE_OFFER)
+
+
+def test_restore_button_is_owner_only(monkeypatch):
+    bot = pytest.importorskip("sahayak.bot")
+    monkeypatch.setattr(bot, "ALLOWED", {"111", "222"})
+    monkeypatch.setattr(bot, "OWNER_CHAT_ID", "111")
+    assert bot.check_tap("111", signing.make(5, "rs")) == (5, "rs")
+    with pytest.raises(bot.Refused, match="Only the owner"):
+        bot.check_tap("222", signing.make(5, "rs"))
+    assert bot.ACTIONS["rs"] == "restore_files"

@@ -8,20 +8,22 @@ from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR
                            SECURITY_CODE, IT_CHAT_ID, CLINIC_NAME)
 from common.contracts import make_event
 from sahayak import signing
-from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT
+from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT, RESTORE_OFFER
 from sahayak.notify import header, incident_type
 
 ALLOWED = {c for c in [OWNER_CHAT_ID] + STAFF_CHAT_IDS if c}
 VENDOR_CHATS = set(VENDOR_CHAT_IDS.values())
 VENDOR_CODES = {"vy", "vn"}
-OWNER_ONLY = {"rel"}
-ACTIONS = {"rm": "remove_filter", "mp": "make_private", "rel": "release_pc"}
+OWNER_ONLY = {"rel", "rs"}
+ACTIONS = {"rm": "remove_filter", "mp": "make_private", "rel": "release_pc", "rs": "restore_files"}
 DONE_TEXT = {        # code -> (worked, didn't work)
     "rm": ("We checked: it's gone.", "We couldn't remove it automatically. Tap Show me how, or call your IT helper."),
     "mp": ("We checked: only your clinic can open it now.", "We couldn't change it automatically. Your IT helper has the details."),
     "rel": ("The PC is being reconnected.", "The PC is still cut off. Your IT helper has the details."),
+    "rs": ("We're putting the files back from the backup. It takes about a minute.",
+           "We couldn't start putting the files back. Your IT helper has the details."),
 }
-SUCCESS = {"rm": "removed", "mp": "made_private", "rel": "ok"}
+SUCCESS = {"rm": "removed", "mp": "made_private", "rel": "ok", "rs": "queued"}
 PAISA_ENTITY = "vendor:payment"   # its own entity, so Paisa Pause never merges into the email/PC incident
 BANK_CHANGE = re.compile(r"(bank|account|a/c|ifsc|upi).{0,40}(chang|new|updat)|"
                          r"(chang|new|updat).{0,40}(bank|account|a/c|ifsc|upi)", re.I | re.S)
@@ -107,6 +109,10 @@ async def handle(q, ctx, cid, iid, code):
         res = await brain("/actions", {"incident_id": iid, "action": ACTIONS[code], "by": cid})
         good, bad = DONE_TEXT[code]
         await q.edit_message_text(q.message.text + "\n\nDone. " + (good if res.get(SUCCESS[code]) else bad))
+        if code == "rel" and res.get(SUCCESS[code]):              # recovery: offer the backup once the PC is back
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton("Owner: put the files back",
+                                                             callback_data=signing.make(iid, "rs"))]])
+            await q.message.reply_text(f"{header()}\n{RESTORE_OFFER}", reply_markup=kb)
 
     elif code.startswith("sd"):                                   # a runbook step is done
         inc = await get_incident(iid)

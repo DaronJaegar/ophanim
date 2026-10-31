@@ -36,11 +36,13 @@ class Incidents:
         return "device" if entity.startswith("device:") else (
             "account" if entity.startswith(("gmail:", "file:", "drive:", "honeytoken:")) else "other")
 
-    def add_signal(self, signal, severity, title, policy="tap", now=None):
-        """signal = {'type','entity','evidence'}. Returns (incident, merged: bool)."""
+    def add_signal(self, signal, severity, title, policy="tap", now=None, merge=True):
+        """signal = {'type','entity','evidence'}. Returns (incident, merged: bool).
+        merge=False: an information-only alert (e.g. old backup) gets its own incident and is not expanded
+        to the person, so a later attack on the same PC never merges into it."""
         now = now or datetime.now(timezone.utc)
-        ents = expand_entities(signal["entity"])
-        for inc in self.items.values():
+        ents = expand_entities(signal["entity"]) if merge else {signal["entity"]}
+        for inc in (self.items.values() if merge else []):
             if inc["status"] == "open" and inc["entities"] & ents and \
                now - inc["updated"] <= timedelta(hours=24):
                 inc["signals"].append(signal)
