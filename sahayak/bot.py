@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 from common.config import (TELEGRAM_TOKEN, OWNER_CHAT_ID, STAFF_CHAT_IDS, VENDOR_CHAT_IDS, BRAIN_URL,
                            SECURITY_CODE, IT_CHAT_ID, CLINIC_NAME)
 from common.contracts import make_event
-from sahayak import signing
+from sahayak import ask, signing
 from sahayak.messages import STEP_TEXT, STEP_HOW, STEP_DONE, OWNER_STEPS, HOW, WHY, ACK_TEXT, RESTORE_OFFER
 from sahayak.notify import header, incident_type
 
@@ -220,23 +220,85 @@ async def handle(q, ctx, cid, iid, code):
         await q.edit_message_text("Thank you, the clinic has been told.")
 
 
-# ---------- forwarded messages and invoice photos (Paisa Pause) ----------
+# ---------- Ask Sahayak: questions in plain words, answered from our guides ----------
+HELP_TEXT = ("Ask me anything about the clinic's safety in your own words, even with spelling mistakes. For example:\n"
+             "• what do I do now?\n• someone wants the OTP, should I give it?\n• is this bill real?\n"
+             "• the computer is showing strange pop-ups\n"
+             "Say \"steps\" for step-by-step help, or \"didn't understand\" for simpler words.\n"
+             "Forward any message about changed bank details and I'll check it with the vendor.\n"
+             "I never ask for passwords, OTPs or payments.")
+
+
+def route(cid, text, is_forward=False, has_photo=False):
+    """Where a message goes: 'paisa' | 'photo_hint' | 'not_bank' | 'ask' | 'ignore'.
+    Paisa Pause first; a forwarded message is something to check, not a question."""
+    clinic, it = cid in ALLOWED, bool(IT_CHAT_ID) and cid == IT_CHAT_ID
+    if clinic and BANK_CHANGE.search(text or ""):
+        return "paisa"
+    if clinic and has_photo and not text:
+        return "photo_hint"
+    if clinic and is_forward:
+        return "not_bank"
+    if (clinic or it) and (text or "").strip():
+        return "ask"
+    return "ignore"
+
+
+async def reply_ask(update: Update, ctx: ContextTypes.DEFAULT_TYPE, question):
+    cid = str(update.effective_chat.id)
+    mode = "it" if IT_CHAT_ID and cid == IT_CHAT_ID else "staff"
+    try:
+        await ctx.bot.send_chat_action(update.effective_chat.id, "typing")
+    except Exception:
+        pass
+    try:
+        incs = await asyncio.to_thread(lambda: requests.get(BRAIN_URL + "/incidents", timeout=5).json())
+    except (requests.RequestException, ValueError):
+        incs = []                                                 # no brain: answer from the guides alone
+    text, source, _ = await asyncio.to_thread(ask.answer, question, incs, mode, None, cid)
+    tail = f"\n\n(From our guide: {source})" if source else ""
+    await update.message.reply_text(f"{header()}\n{text}{tail}")
+
+
+async def ask_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    cid = str(update.effective_chat.id)
+    if cid not in ALLOWED and not (IT_CHAT_ID and cid == IT_CHAT_ID):
+        return
+    question = " ".join(ctx.args or [])
+    if not question:
+        await update.message.reply_text("Type your question after /ask, for example: /ask what do I do now?")
+        return
+    await reply_ask(update, ctx, question)
+
+
+async def help_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"{header()}\n{HELP_TEXT}")
+
+
+# ---------- forwarded messages, invoice photos (Paisa Pause) and questions ----------
 async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_chat.id) not in ALLOWED:
-        return                                                    # only clinic phones can raise alerts
+    cid = str(update.effective_chat.id)
     text = update.message.text or update.message.caption or ""
-    if BANK_CHANGE.search(text):
+    where = route(cid, text, is_forward=getattr(update.message, "forward_origin", None) is not None,
+                  has_photo=bool(update.message.photo))
+    if where == "ask":
+        await reply_ask(update, ctx, text)
+        return
+    if where == "ignore":
+        return                                                    # only clinic phones (and IT) are answered
+    if where == "paisa":
         try:
             await brain("/events", make_event("sahayak", "bank_change_request", PAISA_ENTITY, {"text": text[:500]}))
             # the brain opens an incident and calls notify.send_incident -> "Don't pay yet" arrives
         except requests.RequestException:
             await update.message.reply_text(f"{header()}\nDon't pay yet. Call the vendor on the number "
                                             "you already have, not the one in this message.")
-    elif update.message.photo and not text:
+    elif where == "photo_hint":
         await update.message.reply_text("If this invoice says the bank details changed, send the photo again "
                                         "with a caption like 'bank details changed'.")
     else:
-        await update.message.reply_text("Thanks. I don't see a bank-detail change in this message.")
+        await update.message.reply_text("Thanks. I don't see a bank-detail change in this message. "
+                                        "You can also ask me a question in your own words.")
 
 
 def main():
@@ -244,6 +306,8 @@ def main():
         raise SystemExit("Put TELEGRAM_TOKEN in .env first (from @BotFather).")
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ask", ask_command))
+    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(on_button))
     app.add_handler(MessageHandler((filters.TEXT & ~filters.COMMAND) | filters.PHOTO, on_text))
     print(f"Sahayak running. owner={OWNER_CHAT_ID or '-'} staff={STAFF_CHAT_IDS} "
