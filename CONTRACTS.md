@@ -27,7 +27,7 @@ Unknown types return `{"ok": true, "ignored": <type>}`. A `filter_added` that sc
 - `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, `GET /t/<token>`.
 
 ## 3. graph.json (`GET /graph`)
-`{nodes: [{data: {id, label, kind: attacker|asset|jewel}}], edges: [{data: {id, source, target, ease, verified, live}}], risk, open_paths, one_fix: {fix, text, risk_drop, paths_closed}}`
+`{nodes: [{data: {id, label, kind: attacker|asset|jewel}}], edges: [{data: {id, source, target, ease, factors, verified, live}}], risk, open_paths, one_fix: {fix, text, risk_drop, paths_closed}}`
 
 ## 4. Incident JSON (`GET /incidents`, passed to `sahayak.notify.send_incident`)
 `{id, title, severity: low|medium|high|critical, signals: [{type, entity, evidence, score?}], entities[], kinds[] (device|account|other), policy: auto|tap, status: open|closed, runbook[], done[], created, updated}`

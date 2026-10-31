@@ -6,3 +6,4 @@ __pycache__/
 .venv/
 .pytest_cache/
 .sahayak_used_taps
+demo_files/

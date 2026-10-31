@@ -113,6 +113,7 @@ def to_json(g):
                        "kind": "jewel" if n in JEWELS else ("attacker" if n == "attacker" else "asset")}}
              for n in g.nodes]
     edges = [{"data": {"id": f"{a}-{b}", "source": a, "target": b, "ease": round(ease(g, a, b), 2),
-                       "verified": d["verified"], "live": d["live"]}} for a, b, d in g.edges(data=True)]
+                       "factors": dict(d["factors"]), "verified": d["verified"], "live": d["live"]}}
+             for a, b, d in g.edges(data=True)]
     return {"nodes": nodes, "edges": edges, "risk": total_risk(g),
             "open_paths": sum(p["open"] for p in paths(g)), "one_fix": one_fix(g)}

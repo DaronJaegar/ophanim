@@ -2,11 +2,13 @@
 <html><head><meta charset="utf-8"><title>Chakravyuh console</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 <style>
- body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#120e3a;color:#e6e9f2;display:grid;grid-template-columns:2fr 1fr;height:100vh}
+ body{margin:0;font-family:Segoe UI,Arial,sans-serif;font-size:18px;background:#120e3a;color:#e6e9f2;display:grid;grid-template-columns:2fr 1fr;height:100vh}
  #cy{border-right:1px solid #3f3c8e} #side{padding:16px;overflow:auto}
  h2{color:#2ecddb;margin:4px 0 8px} .big{font-size:28px;color:#fbbf24;font-weight:700}
  .inc{border:1px solid #3f3c8e;border-radius:8px;padding:8px;margin:8px 0} .critical{border-color:#ff6b81} .high{border-color:#fbbf24}
- .ok{color:#34d399} .bad{color:#ff6b81} small{color:#ac99cf}
+ .ok{color:#34d399} .bad{color:#ff6b81} small{color:#ac99cf;font-size:15px}
+ ol{margin:0 0 8px;padding-left:20px} li{margin:4px 0} .r{color:#fbbf24;font-weight:700}
+ #detail{border:1px solid #3f3c8e;border-radius:8px;padding:8px;margin:8px 0;font-size:16px} #detail div{margin:3px 0}
 </style></head><body>
 <div id="cy"></div>
 <div id="side">
@@ -14,6 +16,8 @@
  <div>Risk score <span class="big" id="risk">-</span> &nbsp; Open paths <span class="big" id="open">-</span></div>
  <p><b>One fix:</b> <span id="fix">-</span></p>
  <p>Audit log: <span id="audit">-</span></p>
+ <h2>Top attack paths</h2><ol id="paths"></ol>
+ <div id="detail"><small>Click a box or an arrow to see why it is risky.</small></div>
  <h2>Incidents</h2><div id="incs"></div>
 </div>
 <script>
@@ -25,17 +29,39 @@ const cy = cytoscape({container: document.getElementById('cy'), layout:{name:'pr
   {selector:'node[kind="jewel"]', style:{'background-color':'#5a1f3a','border-color':'#ff6b81','border-width':2.5}},
   {selector:'node[kind="attacker"]', style:{'border-color':'#ff6b81'}},
   {selector:'edge', style:{'width':2,'line-color':'#6b6fb8','target-arrow-color':'#6b6fb8','target-arrow-shape':'triangle','curve-style':'bezier',
-    'label':'data(ease)','font-size':10,'color':'#ac99cf'}},
+    'label':'data(ease)','font-size':13,'color':'#e6e9f2','text-background-color':'#120e3a','text-background-opacity':1,'text-background-padding':3}},
   {selector:'edge[?live]', style:{'line-color':'#ff6b81','target-arrow-color':'#ff6b81','width':4}},
   {selector:'edge[!verified]', style:{'line-style':'dashed'}}
  ]});
+const NICE = {no_2sv:'no 2-step login', live_attack:'live attack', public_link_live:'public link (live)'};
+const nice = f => NICE[f] || f.replace(/_/g, ' ');
+const label = id => cy.getElementById(id).data('label') || id;
+const edgeLine = e => `${label(e.data('source'))} → ${label(e.data('target'))}: ` +
+  Object.entries(e.data('factors') || {}).map(([f, v]) => `${nice(f)} ${v}`).join(' × ') +
+  ` = <b>${e.data('ease')}</b>${e.data('live') ? ' <span class="bad">LIVE</span>' : ''}${e.data('verified') ? '' : ' <small>(not verified)</small>'}`;
+let picked = null;   // id of the clicked node or edge; kept across refreshes
+let fitted = false;  // fit the graph to the screen once, then leave zoom to the presenter
+window.addEventListener('resize', () => cy.fit(undefined, 60));
+function showDetail(){
+  const el = picked && cy.getElementById(picked);
+  const box = document.getElementById('detail');
+  if (!el || el.empty()) { box.innerHTML = '<small>Click a box or an arrow to see why it is risky.</small>'; return; }
+  const edges = el.isEdge() ? el : el.connectedEdges();
+  box.innerHTML = `<b>${el.isEdge() ? 'Step' : label(picked)}</b>` + edges.map(e => `<div>${edgeLine(e)}</div>`).join('');
+}
+cy.on('tap', 'node, edge', ev => { picked = ev.target.id(); showDetail(); });
+cy.on('tap', ev => { if (ev.target === cy) { picked = null; showDetail(); } });
 async function tick(){
   const g = await (await fetch('/graph')).json();
   g.nodes.forEach(n => { n.position = {x:(POS[n.data.id]||[0,0])[0], y:(POS[n.data.id]||[0,0])[1]}; });
   cy.json({elements:{nodes:g.nodes, edges:g.edges}});
+  if (!fitted) { cy.fit(undefined, 60); fitted = true; }
   document.getElementById('risk').textContent = g.risk;
   document.getElementById('open').textContent = g.open_paths;
   document.getElementById('fix').textContent = g.one_fix ? `${g.one_fix.text} (closes ${g.one_fix.paths_closed}, risk -${g.one_fix.risk_drop})` : '-';
+  showDetail();
+  const ps = (await (await fetch('/paths')).json()).filter(p => p.open).slice(0, 3);
+  document.getElementById('paths').innerHTML = ps.length ? ps.map(p => `<li>${p.sentence} <span class="r">${p.risk}</span></li>`).join('') : '<small>No open paths.</small>';
   const a = await (await fetch('/audit/verify')).json();
   document.getElementById('audit').innerHTML = a.ok ? '<span class="ok">verified</span>' : `<span class="bad">BROKEN at row ${a.broken_at}</span>`;
   const incs = await (await fetch('/incidents')).json();
