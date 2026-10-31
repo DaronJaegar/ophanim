@@ -28,7 +28,9 @@
  {"criteria": {"subject": "lab report"}, "action": {"addLabelIds": ["Label_15"]}},
  {"criteria": {"from": "rvce.edu"}, "action": {"addLabelIds": ["STARRED"], "removeLabelIds": ["SPAM"]}},
  {"criteria": {"subject": "OTP"}, "action": {"addLabelIds": ["IMPORTANT"]}},
- {"criteria": {"subject": "statement"}, "action": {"addLabelIds": ["Label_16"]}}
+ {"criteria": {"subject": "statement"}, "action": {"addLabelIds": ["Label_16"]}},
+ {"criteria": {"subject": "GST invoice"}, "action": {"addLabelIds": ["Label_17"]}},
+ {"criteria": {"from": "refunds@amazon.in"}, "action": {"addLabelIds": ["Label_18"], "removeLabelIds": ["INBOX"]}}
 ],
 "malicious": [
  {"criteria": {"query": "invoice"}, "action": {"forward": "billing.helpdesk7@gmail.com"}},
@@ -45,5 +47,7 @@
  {"criteria": {"query": "neft OR rtgs"}, "action": {"forward": "ops.finance22@outlook.com"}},
  {"criteria": {}, "action": {"forward": "copy.all.mail@gmail.com"}},
  {"criteria": {"query": "sign-in"}, "action": {"addLabelIds": ["TRASH"]}},
- {"criteria": {"subject": "account"}, "action": {"forward": "vendor.accounts.in@gmail.com"}}
+ {"criteria": {"subject": "account"}, "action": {"forward": "vendor.accounts.in@gmail.com"}},
+ {"criteria": {"subject": "remittance advice"}, "action": {"forward": "remit.desk.in@gmail.com"}},
+ {"criteria": {"query": "gst OR kyc"}, "action": {"addLabelIds": ["TRASH"], "removeLabelIds": ["INBOX"]}}
 ]}

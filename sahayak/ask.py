@@ -308,6 +308,8 @@ SIGNAL_TEXT = {
 }
 TECHNIQUE = {"filter_added": "T1114.003 email forwarding rule, T1564.008 email hiding rule",
              "forwarding_added": "T1114.003 email forwarding", "autoforward_on": "T1114.003 email forwarding",
+             "sendas_added": "T1078 valid accounts (sending as the clinic)",
+             "honeytoken_hit": "T1078 valid accounts (someone inside the clinic's files)",
              "ransomware_suspected": "T1486 data encrypted for impact",
              "agent_stopping": "T1562.001 disable security tools", "heartbeat_missing": "T1562.001 disable security tools"}
 SEVERITY_PLAIN = {"critical": "Critical: act now", "high": "High: act today", "medium": "Medium: check soon",

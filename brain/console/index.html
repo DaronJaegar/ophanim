@@ -18,7 +18,7 @@
  <p>Audit log: <span id="audit">-</span></p>
  <h2>Top attack paths</h2><ol id="paths"></ol>
  <div id="detail"><small>Click a box or an arrow to see why it is risky.</small></div>
- <h2>Incidents</h2><div id="incs"></div>
+ <h2>Incidents <small><label><input type="checkbox" id="expert"> Expert view</label></small></h2><div id="incs"></div>
 </div>
 <script>
 const POS = {attacker:[60,260], gmail:[260,120], drive:[260,300], pc:[260,440], bank:[460,60], invoices:[460,200], money:[680,130], records:[680,370]};
@@ -65,10 +65,16 @@ async function tick(){
   const a = await (await fetch('/audit/verify')).json();
   document.getElementById('audit').innerHTML = a.ok ? '<span class="ok">verified</span>' : `<span class="bad">BROKEN at row ${a.broken_at}</span>`;
   const incs = await (await fetch('/incidents')).json();
+  const expert = document.getElementById('expert').checked;
+  if (expert && !MITRE) MITRE = await (await fetch('/mitre')).json();
   document.getElementById('incs').innerHTML = incs.reverse().map(i => `<div class="inc ${i.severity}">
     <b>#${i.id} ${i.title}</b><br><small>${i.severity} · ${i.status} · policy ${i.policy}</small><br>
     <small>Signals: ${i.signals.map(s => s.type + (s.score ? ' (score ' + s.score.score + ': ' + s.score.markers.join(', ') + ')' : '')).join(' → ')}</small><br>
-    <small>Runbook: ${i.runbook.map(s => (i.done.includes(s) ? '✔ ' : '') + s).join(' → ')}</small></div>`).join('');
+    <small>Runbook: ${i.runbook.map(s => (i.done.includes(s) ? '✔ ' : '') + s).join(' → ')}</small>` +
+    (expert ? `<br><small>MITRE ATT&amp;CK: ${[...new Set(i.signals.map(s => MITRE[s.type]).filter(Boolean))].join('; ') || '-'}
+      · <a style="color:#2ecddb" href="/incidents/${i.id}/report" target="_blank">report + audit trail</a></small>` : '') + `</div>`).join('');
 }
+let MITRE = null;   // signal type -> technique, loaded once when Expert view is first ticked
+document.getElementById('expert').addEventListener('change', tick);
 tick(); setInterval(tick, 2000);
 </script></body></html>

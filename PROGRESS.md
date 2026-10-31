@@ -1,8 +1,8 @@
 # Chakravyuh + Sahayak — full progress report (Team INCOGNITO, Kodikon 6.0)
 
-Prepared for: Aaron (Module B, brain + console + eval). Last updated: 2026-10-31 (evening).
+Prepared for: Aaron (Module B, brain + console + eval). Last updated: 2026-11-01 (night, before Gate 2).
 Project folder: `C:\Users\aaron\Downloads\chakravyuh-starter\chakravyuh`
-GitHub: https://github.com/DaronJaegar/ophanim (**public**). `origin/main` = `7da484f` (pushed 2026-10-31); only this file has changed since.
+GitHub: https://github.com/DaronJaegar/ophanim (**public**). Everything is on `main` (latest pushes: Drive fixes `d30cc4b`, Aradhya's Ask Sahayak `7a5772f`, delivery audit `9281962`, Section A of the plan check). Always `git pull` first.
 Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-lexical-whale.md`
 
 ---
@@ -11,9 +11,9 @@ Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-
 
 **Current phase: Phase 0, before the event (setup only). Close to done, not complete.**
 - Module B (brain, console, eval) is at the level the docs ask for by Gate 2 *in the starter*: graph + Risk 12.45, scorer, correlation, audit chain, policy, heartbeat watcher, console. Verified by tests, eval and smoke runs, **but only in isolation** (no live sensor, bot or agent has posted to it yet).
-- The team is now active on GitHub: Bruce pushed 3 sensor fixes, Aradhya pushed a large Sahayak update. All merged on `main`; **22 tests pass**.
+- The team is now active on GitHub: Bruce pushed 3 sensor fixes, Aradhya pushed a large Sahayak update. All merged on `main`; **88 tests pass** (incl. Aradhya's 20 Ask Sahayak scenario tests).
 - Real credentials now work on Aaron's laptop: Google OAuth (clinic account, Gmail + Drive read OK) and the Telegram bot token (`@sahayak_incognito_bot`, `getMe` OK).
-- What still blocks the Phase 0 gate: chat IDs and honeytokens in `.env`, clinic Drive content, Ayan's Linux PC, organiser answers, and each teammate's own smoke test (section 8).
+- What still blocks the Phase 0 gate: chat IDs and honeytokens in `.env`, organiser answers, and each teammate's own smoke test (section 8).
 
 ### Next actions (2026-10-31 evening, in order)
 State now: **Remove it worked on a real phone (2026-10-31 14:15 UTC run, see section 13)**; clinic Gmail has 0 filters (forwarding address still accepted, kept for reruns); Drive set up (Patient records, Invoices, Netbanking login, all private); decoy email sent; local `main` = GitHub + this file.
@@ -32,7 +32,7 @@ State now: **Remove it worked on a real phone (2026-10-31 14:15 UTC run, see sec
 | 1 Brain alone + console (Sessions 1-2) | Review 1, 2:30 pm | **Done** (console projector-ready, events from teammates' laptops); rehearsal left |
 | 2 Golden path part 1, email (Session 3) | Gate 1, 7:30 pm | **Core done**: real filter (score 7) -> alert -> owner taps Remove it -> deleted + verified in Gmail. Left: timing, explanation buttons, Paisa Pause, 3 clean runs |
 | 3 Golden path part 2, PC + correlation (Session 4) | Gate 2, 2:30 am | **In progress**: agent -> brain, heartbeat alert (16 s), email+PC merge, agent token all live in dry run; real containment not yet |
-| 4 Proof + Should features | Freeze 5:30 am | Eval A/B/C done; agent upgrades + venue baseline tool written; expert view not started |
+| 4 Proof + Should features | Freeze 5:30 am | Eval A/B/C done (A now 17 attacks / 32 normal); expert view done (MITRE + report); Ask Sahayak (RAG) merged; venue baseline not run |
 | 5 Freeze, reset, offline, dry runs | Dry runs 7:15 / 8:35 | Not started |
 | 6 Final review + pitch | 9 am - 12 pm | Not started |
 
@@ -61,7 +61,7 @@ Team: Bruce = A (account sensors), Aaron = B (brain + console + eval), Ayan = C 
 ---
 
 ## 4. What the code contains (per module, with state)
-Run all commands from the project folder. `pytest`: **36 passed** (test_brain 4, test_brain_flow 7, test_detector 7, test_sahayak 18).
+Run all commands from the project folder. `pytest`: **88 passed** (brain, brain flow, Drive, detector, Sahayak, Ask Sahayak scenarios). Eval: A **17/17 caught, 0/32 false alarms** at thresholds 3-4, B 10/10, C 9/9.
 
 ### 4.1 Brain (Aaron) - `brain/`
 - `app.py`: `POST /events`, `POST /actions`, `POST /heartbeat`, `GET /agent/commands`, `GET /graph`, `/paths`, `/incidents`, `/audit`, `/audit/verify`, `/console`, honeytoken router mount, background heartbeat watcher (5 s tick, 15 s silence = `heartbeat_missing`), Sahayak notifier plugged in at startup. Aaron's fixes: section 5.3 and 7.1.
@@ -277,6 +277,17 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] Venue baseline tool: `python -m eval.venue_baseline [--since <ISO time>]` reads the audit log (read-only, safe while the brain runs) and prints alerts/asks per hour.
 - [ ] Venue benign baseline measured: run brain + sensors during normal use only (no tests), then run the tool with `--since` the start time.
 - [ ] Join-up: the full email story 3 times on real phones from a clean reset, alert < 45 s, `/audit/verify` ok; tag `gate1`.
+### Session 4 (Drive + bait links) and plan check, Section A (2026-10-31 night)
+- [x] Drive write token (`token_drive_write.json`) and Gmail baseline (`python -m sensors.reset_gmail --save`).
+- [x] Drive test on real phones: share Patient records -> **one** alert (was 9: one per PDF) -> owner taps Make it private -> `verified: true` -> re-share alerts again. Owner delivery confirmed (`OWNER ...523 ok`).
+- [x] Fixes behind it: files public only through their folder are skipped; Make it private on a file makes its folder private (Google refuses to remove an inherited link).
+- [x] Every Telegram send is audited per phone (`notify` rows); `python -m eval.check_session4` shows them.
+- [x] Same alert is not re-sent within 10 min (audited as `notify_skipped`); a new filter/file or an email+PC merge is always sent.
+- [x] Failure replies no longer start with "Done." (`sahayak/bot.py`).
+- [x] F1: Indian billing money words (gst, remittance, beneficiary, kyc, cheque, a/c, swift, imps, payout). Not "refund": it turned "archive Amazon refund mail" into a false alarm; that case stays in the eval as a guard.
+- [ ] Bait-link test 4a/4b: open the decoy link in Chrome (1 hit, `decoy-email`); paste it **only into Telegram Saved Messages, never the bot chat** (the bot would send it to the AI via Ask Sahayak); hit count must not rise.
+- [ ] Section B of the plan check: one item at a time, each needs Aaron's "go" (Windows hand test for Gate 2, reset script, BRAIN_TOKEN, ask level, digest, F2-F7, POP, /status, IT summary, reminders, link check, PC health).
+- Note: Ayan's demo PC is **Windows** now (Linux is out); the Gate 2 hand test needs a Windows PowerShell version (Section B).
 ### Phase 3 (Gate 2)
 - [x] Agent -> brain with Ayan (dry run): fake ransomware fired on decoy + entropy (2 of 3), incident #1 critical.
 - [x] Agent stopped -> `heartbeat_missing` after 16 s, merged into the same incident (< 20 s target met).
@@ -287,7 +298,7 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [ ] Owner taps Release with `DRY_RUN=0` -> PC back online in 3-5 s.
 - [ ] Three clean kill-chain runs; tag `gate2`.
 ### Phase 4
-- [ ] Expert view (MITRE IDs T1114.003, T1564.008, T1486, T1078, T1562.001), live audit panel, `GET /incidents/<id>/report`, "Next fix" after each fix.
+- [x] Expert view: console **Expert view** tick box shows MITRE IDs per incident (one map: `sahayak/ask.TECHNIQUE`, now with T1078) and links `GET /incidents/<id>/report` (incident + techniques + audit trail + verify). `GET /mitre`. The report holds attacker-written evidence: never fed to Ask Sahayak or the AI.
 - [ ] Re-run eval on all sets with real data; write numbers honestly.
 ### Phase 5
 - [ ] One-command reset: delete `chakravyuh.db`, clear attacker filters, re-privatise files, restore test folder, release PC, reset graph/honeytokens, `signing.reset_used()`.
@@ -298,8 +309,8 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 ---
 
 ## 9. Files: pushed vs local
-Pushed to `main` as `7da484f`: console polish, `factors` in `/graph`, `sensors/demo_files.py`, `agent/hand_test_containment.sh`, `.gitignore` (`demo_files/`), PROGRESS.md. Since then only this PROGRESS.md update is local (not yet committed).
-Local only, never pushed (git-ignored): `.env`, `credentials.json`, `token_basic.json`, `chakravyuh.db`, `.venv`, `.pytest_cache`, `.sahayak_used_taps`, `demo_files/` (holds the honeytoken links).
+All code is on `main`; check with `git status -sb` (should show no `ahead`/`behind`).
+Local only, never pushed (git-ignored): `.env`, `credentials.json`, `token_basic.json`, `token_drive_write.json`, `gmail_baseline.json`, `chakravyuh.db`, `.venv`, `.pytest_cache`, `.sahayak_used_taps`, `demo_files/` (holds the honeytoken links).
 
 ## 10. How to run
 ```

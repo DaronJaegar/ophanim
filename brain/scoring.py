@@ -1,7 +1,9 @@
 """Multi-marker scoring for Gmail filters (Aaron, Module B).
 No single marker is enough; markers add up. >=5 alert now, 3-4 ask the owner, <3 weekly digest.
 """
-MONEY_WORDS = ["invoice", "payment", "bank", "upi", "ifsc", "account", "transfer", "salary", "neft", "rtgs"]
+MONEY_WORDS = ["invoice", "payment", "bank", "upi", "ifsc", "account", "transfer", "salary", "neft", "rtgs",
+               "gst", "remittance", "beneficiary", "kyc", "cheque", "a/c", "swift", "imps", "payout"]
+# not "refund": archiving shop refund mail (from:refunds@amazon.in, skip inbox) would become an "ask" false alarm
 SECURITY_WORDS = ["security", "password", "otp", "verify", "verification", "sign-in", "signin",
                   "login", "alert", "accounts.google.com", "no-reply@accounts.google.com", "2-step"]
 HIDE_LABELS_ADD = {"TRASH", "SPAM"}

@@ -132,7 +132,7 @@ async def handle(q, ctx, cid, iid, code):
     if code in ACTIONS:
         res = await brain("/actions", {"incident_id": iid, "action": ACTIONS[code], "by": cid})
         good, bad = DONE_TEXT[code]
-        await q.edit_message_text(q.message.text + "\n\nDone. " + (good if res.get(SUCCESS[code]) else bad))
+        await q.edit_message_text(q.message.text + "\n\n" + (("Done. " + good) if res.get(SUCCESS[code]) else bad))
         if code == "rel" and res.get(SUCCESS[code]):              # recovery: offer the backup once the PC is back
             kb = InlineKeyboardMarkup([[InlineKeyboardButton("Owner: put the files back",
                                                              callback_data=signing.make(iid, "rs"))]])

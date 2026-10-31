@@ -27,8 +27,20 @@ last_heartbeat = {}            # device -> unix time
 agent_commands = {}            # device -> list of commands waiting for the agent
 recent_changes = []            # unix times of risky changes (forwarding added etc.)
 notifier = None                # set by Sahayak: a function(incident_dict) that sends the alert
+last_sent = {}                 # alert key -> unix time it was last sent to the phones
+RESEND_AFTER = 600             # the same alert again within 10 min is audited but not re-sent
 
-def notify(inc):
+def alert_key(e):
+    """Same signal type on the same thing. A new filter or file is a new alert (it needs its own button)."""
+    ev = e.evidence or {}
+    return (e.type, e.entity, (ev.get("filter") or {}).get("id") or ev.get("file_id") or "")
+
+def notify(inc, key=None):
+    if key is not None:
+        if time.time() - last_sent.get(key, 0) < RESEND_AFTER:
+            audit.append({"kind": "notify_skipped", "incident_id": inc["id"], "reason": "same alert sent < 10 min ago"})
+            return
+        last_sent[key] = time.time()
     if notifier:
         try:
             sent = notifier(incidents.public(inc))
@@ -135,7 +147,7 @@ def post_event(e: Event):
     if "save_evidence" in inc["runbook"] and "save_evidence" not in inc["done"]:
         inc["done"].append("save_evidence")              # the event with its full evidence was just written to the audit log
     audit.append({"kind": "incident", "id": inc["id"], "merged": merged, "severity": inc["severity"]})
-    notify(inc)
+    notify(inc, alert_key(e))      # an email+PC merge has a new key, so it is always sent
     return {"ok": True, "incident": incidents.public(inc), "merged": merged}
 
 @app.post("/actions")
@@ -188,6 +200,32 @@ def commands(device: str, x_agent_token: str = Header(default="")):
 @app.get("/incidents")
 def list_incidents():
     return [incidents.public(i) for i in incidents.items.values()]
+
+def _techniques():
+    try:                                   # one MITRE map for the bot and the console: sahayak/ask.py
+        from sahayak.ask import TECHNIQUE
+        return TECHNIQUE
+    except Exception:
+        return {}
+
+@app.get("/mitre")
+def mitre():
+    return _techniques()
+
+@app.get("/incidents/{iid}/report")
+def report(iid: int):
+    """Expert view: the incident, its MITRE techniques and its audit trail. Contains attacker-written
+    evidence, so it is for people only: never feed it to sahayak/ask.py or the AI."""
+    inc = incidents.items.get(iid)
+    if not inc:
+        raise HTTPException(404, "no such incident")
+    pub, tech = incidents.public(inc), _techniques()
+    ents = set(pub["entities"])
+    mine = lambda b: b.get("incident_id") == iid or (b.get("kind") == "incident" and b.get("id") == iid) \
+        or (b.get("kind") == "event" and b.get("entity") in ents)
+    trail = [r for r in reversed(audit.rows(limit=10000)) if mine(r["body"])]   # oldest first
+    return {"incident": pub, "techniques": sorted({tech[s["type"]] for s in inc["signals"] if s["type"] in tech}),
+            "audit_trail": trail, "audit_verify": audit.verify()}
 
 @app.get("/graph")
 def get_graph():

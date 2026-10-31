@@ -41,6 +41,31 @@ def test_honeytoken_lights_the_path_where_the_decoy_lives(client):
     _event(client, "honeytoken_hit", "honeytoken:t2", {"planted_in": "decoy-email"})
     assert ("attacker", "gmail") in live()
 
+def test_same_alert_is_sent_once_in_10_minutes_but_audited(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr(A, "last_sent", {})
+    monkeypatch.setattr(A, "notifier", lambda inc: sent.append(inc["id"]) or [{"to": "...111", "ok": True}])
+    _event(client, "file_public", "file:abc", {"file_id": "abc"})
+    _event(client, "file_public", "file:abc", {"file_id": "abc"})            # re-shared: same alert
+    _event(client, "file_public", "file:xyz", {"file_id": "xyz"})            # another file: new alert
+    kinds = [r["body"]["kind"] for r in A.audit.rows()]
+    assert len(sent) == 2 and kinds.count("notify") == 2 and kinds.count("notify_skipped") == 1
+
+def test_email_and_pc_merge_is_always_sent(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr(A, "last_sent", {})
+    monkeypatch.setattr(A, "notifier", lambda inc: sent.append(inc["kinds"]) or [])
+    _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
+    _event(client, "ransomware_suspected", "device:frontdesk-pc")
+    assert len(sent) == 2 and sent[-1] == ["account", "device"]
+
+def test_report_has_mitre_and_audit_trail(client):
+    inc = _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})["incident"]
+    r = client.get(f"/incidents/{inc['id']}/report").json()
+    assert any("T1114.003" in t for t in r["techniques"]) and r["audit_verify"]["ok"]
+    assert [x["body"]["kind"] for x in r["audit_trail"]][:2] == ["event", "incident"]
+    assert client.get("/incidents/999/report").status_code == 404
+
 def test_merged_incident_next_step_is_confirm_with_owner(client):
     _event(client, "filter_added", "gmail:clinic", {"filter": FILTER})
     inc = _event(client, "ransomware_suspected", "device:frontdesk-pc")["incident"]
