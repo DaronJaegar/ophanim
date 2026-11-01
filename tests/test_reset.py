@@ -1,5 +1,4 @@
 """One-command reset, with fakes only: never the real Gmail, Drive, brain or processes.  python -m pytest tests -q"""
-import os
 from types import SimpleNamespace
 from scripts import reset_demo as R
 

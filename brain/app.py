@@ -3,6 +3,7 @@ Run:  uvicorn brain.app:app --host 0.0.0.0 --port 8000
 """
 import asyncio, hmac, time
 from datetime import datetime, timezone
+from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -330,19 +331,21 @@ def verify():
 
 # UI (Ophanim redesign): landing at /, console at /console, old console kept at /console/classic.
 # Assets are vendored under brain/web (no CDN needed on the venue network). JSON APIs above are unchanged.
-app.mount("/ui", StaticFiles(directory="brain/web"), name="ui")
+# Paths are taken from this file, so the brain also starts when launched from another folder.
+HERE = Path(__file__).parent
+app.mount("/ui", StaticFiles(directory=HERE / "web"), name="ui")
 
 @app.get("/", include_in_schema=False)
 def landing():
-    return FileResponse("brain/web/index.html")
+    return FileResponse(HERE / "web" / "index.html")
 
 @app.get("/console", include_in_schema=False)
 def console():
-    return FileResponse("brain/web/console.html")
+    return FileResponse(HERE / "web" / "console.html")
 
 @app.get("/console/classic", include_in_schema=False)
 def console_classic():
-    return FileResponse("brain/console/index.html")
+    return FileResponse(HERE / "console" / "index.html")
 
 async def watch_heartbeats():
     """If an agent that was alive goes quiet for 15 s, treat it as hostile."""

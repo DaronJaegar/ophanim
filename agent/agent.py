@@ -17,6 +17,7 @@ BACKUP_DIR = WATCH_DIR.rstrip("/\\") + "_backup"
 OLD_BACKUP_DAYS = 7
 HEADERS = {"X-Agent-Token": AGENT_TOKEN} if AGENT_TOKEN else {}
 state = {"contained": False, "suspended": None, "backup_age_days": None, "restoring": False, "token_warned": False}
+STARTED = time.time()        # programs already running before the agent are never frozen
 
 def post(path, body):
     try:
@@ -28,9 +29,10 @@ def post(path, body):
         pass                 # brain unreachable (offline / contained): containment already happened locally
 
 def suspend_writer():
-    """Level 3: freeze (not kill) the process writing the most right now, so nothing is lost if we picked wrong."""
+    """Level 3: freeze (not kill) the process writing in the watched folder (or a new writer), so nothing is lost
+    if we picked wrong. No clear suspect -> freeze nothing; the network cut-off has already happened."""
     try:
-        p = top_writer_now()
+        p = top_writer_now(folder=WATCH_DIR, since=STARTED)
         if p:
             p.suspend()
             return {"name": p.name(), "pid": p.pid}

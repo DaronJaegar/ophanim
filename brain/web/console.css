@@ -17,18 +17,20 @@ body{display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-colum
 .switch input:checked+.track::after{transform:translateX(18px)}
 .switch input:focus-visible+.track{outline:3px solid var(--violet-text);outline-offset:2px}
 
-.split{display:grid;grid-template-columns:var(--left) 12px minmax(0,1fr);min-height:0}
+html{overflow:hidden}
+.split{display:grid;grid-template-columns:var(--left) 12px minmax(0,1fr);min-height:0;overflow:hidden}
 .pane{min-width:0;min-height:0}
-.graph-pane{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--paper);
+/* overflow:hidden keeps the graph inside its own pane; it can never paint over the info panel */
+.graph-pane{position:relative;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--paper);
   background-image:radial-gradient(var(--hair) 1px,transparent 1px);background-size:24px 24px}
-.pane-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--ink);background:var(--paper)}
+.pane-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--ink);background:var(--paper)}
 .pane-head h1{font-size:30px}
 .pane-head .lbl{margin:4px 0 0}
 .tools{display:flex;gap:0;border:1px solid var(--ink)}
 .tbtn{min-width:44px;min-height:40px;padding:0 12px;border:0;border-right:1px solid var(--ink);background:var(--paper);font:700 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .tbtn:last-child{border-right:0}
 .tbtn:hover{background:var(--ink);color:var(--paper)}
-#cy{position:relative;min-height:0}
+#cy{position:relative;min-height:0;min-width:0;overflow:hidden}
 .legend{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;padding:8px 18px;border:0;border-top:1px solid var(--ink);background:var(--paper);font-size:12px}
 .legend p{margin:0}
 .legend ul{flex:1;list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}
@@ -41,7 +43,7 @@ body{display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-colum
 .divider:hover,.divider.drag{background:var(--lime)}
 .divider:focus-visible{outline:3px solid var(--violet-text);outline-offset:-3px}
 
-.info-pane{overflow:auto;background:var(--paper)}
+.info-pane{position:relative;z-index:1;overflow:auto;background:var(--paper)}
 .block{padding:16px 20px 18px;border-bottom:1px solid var(--ink)}
 .block>.lbl:first-child{margin:0 0 8px}
 .muted{color:var(--muted);letter-spacing:.06em;text-transform:none}
@@ -55,7 +57,10 @@ body{display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-colum
 .ok{color:var(--ok);font-weight:700}.bad{color:var(--red);font-weight:700}
 .fix-block{background:var(--panel)}
 .fix{margin:0;font:700 24px/1.15 var(--display);text-transform:uppercase}
-.fix-impact{margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap}
+.fix-impact{margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fix-block.urgent{background:var(--paper);box-shadow:inset 6px 0 0 var(--red)}
+.fix-block.urgent .fix{color:var(--red)}
+.fix-impact .after{font-size:14px;color:var(--ink)}
 .paths{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .paths li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--ink);background:var(--paper);cursor:default}
 .paths li:hover,.paths li:focus-visible{background:var(--panel)}

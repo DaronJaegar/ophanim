@@ -1,21 +1,31 @@
 # Chakravyuh + Sahayak — full progress report (Team INCOGNITO, Kodikon 6.0)
 
-Prepared for: Aaron (Module B, brain + console + eval). Last updated: 2026-11-01 (night, before Gate 2).
+Prepared for: Aaron (Module B, brain + console + eval). Last updated: 2026-11-01 (early morning, before Gate 2).
 Project folder: `C:\Users\aaron\Downloads\chakravyuh-starter\chakravyuh`
-GitHub: https://github.com/DaronJaegar/ophanim (**public**). Everything is on `main` (latest pushes: Drive fixes `d30cc4b`, Aradhya's Ask Sahayak `7a5772f`, delivery audit `9281962`, Section A of the plan check). Always `git pull` first.
+GitHub: https://github.com/DaronJaegar/ophanim (**public**). Everything is on `main` (latest pushes: Drive fixes `d30cc4b`, Ask Sahayak `7a5772f`, delivery audit `9281962`, plan check Section A `da33267`, Windows hand test `3924e56`, Section B `a0019c1` / `3ced53c` / `b01fe63`). Always `git pull` first.
 Plan file: `C:\Users\aaron\.claude\plans\c-users-aaron-downloads-03-setup-guide-lexical-whale.md`
 
 ---
 
 ## 1. Where the project is right now (short answer)
 
-**Current phase: Phase 0, before the event (setup only). Close to done, not complete.**
-- Module B (brain, console, eval) is at the level the docs ask for by Gate 2 *in the starter*: graph + Risk 12.45, scorer, correlation, audit chain, policy, heartbeat watcher, console. Verified by tests, eval and smoke runs, **but only in isolation** (no live sensor, bot or agent has posted to it yet).
-- The team is now active on GitHub: Bruce pushed 3 sensor fixes, Aradhya pushed a large Sahayak update. All merged on `main`; **113 tests pass** (incl. Aradhya's Ask Sahayak scenario tests).
-- Real credentials now work on Aaron's laptop: Google OAuth (clinic account, Gmail + Drive read OK) and the Telegram bot token (`@sahayak_incognito_bot`, `getMe` OK).
-- What still blocks the Phase 0 gate: chat IDs and honeytokens in `.env`, organiser answers, and each teammate's own smoke test (section 8).
+**Current phase: Session 4 / Gate 2. All planned code is written, tested and pushed; what is left is live testing on real phones and Ayan's PC.**
+- **Code complete (2026-11-01):** plan check Sections A and B are built (section 8, "Session 4"). Section C is roadmap only, on purpose.
+- **Checks on Aaron's laptop (2026-11-01):** 113 tests pass; eval A catches 24/24 attacks at ask level (15/24 straight to alert) with 0/39 false alarms; B 10/10; C 9/9; live brain smoke test 19/19; `/audit/verify` ok.
+- **Done live:** email Remove it on a real phone (Gate 1 core); Drive share -> one alert -> Make it private on real phones; owner delivery confirmed per phone; agent -> brain, heartbeat alert and email+PC merge (dry run).
+- **Left (live only):** bait-link test, explanation buttons, Paisa Pause, alert time < 45 s, 3 clean email runs (`gate1`); Ayan's Windows hand test, real containment with `DRY_RUN=0`, 3 kill-chain runs (`gate2`); reset, offline test, dry runs, rehearsal.
+- **New UI (Bruce, `64a00be` + `8e13cfb`, pulled 2026-11-01):** landing page at `/`, new console at `/console` (graph, incidents, Expert view with MITRE + report), old console at `/console/classic`. All files are served locally (no internet needed at the venue). Start the brain from the project folder (it finds `brain/web` from there).
+- **Only Aaron's laptop runs `sahayak.bot`.** A `telegram.error.Conflict ... only one bot instance` error means someone else is running it with the same token: they must stop it (Ctrl+C). A teammate who wants their own test bot makes one with @BotFather.
 
-### Next actions (2026-10-31 evening, in order)
+### Next actions (2026-11-01, in order)
+1. `git pull` on every laptop (Bruce, Aradhya, Ayan).
+2. `python -m scripts.reset_demo --dry-run`, then the real reset (deletes the leftover attacker filter).
+3. Bait-link test 4a/4b (section 8).
+4. On real phones: explanation buttons, Paisa Pause (with Remove it after FAKE INVOICE), "Did you make it?", reminders, `/status`, `/digest`, link check; time the alert (< 45 s); 3 clean runs; `git tag gate1`.
+5. Ayan: `agent\hand_test_containment.ps1` -> ALL PASS screenshot; then Gate 2 with `DRY_RUN=0`; 3 runs; `git tag gate2`.
+6. Optional before the freeze: set `BRAIN_TOKEN` and `VENDOR_DOMAINS` in `.env` and restart all three. Agent flags (`RANSOM_NOTES`, `PC_HEALTH`) only after Gate 2.
+
+### Earlier next actions (2026-10-31 evening, kept for history)
 State now: **Remove it worked on a real phone (2026-10-31 14:15 UTC run, see section 13)**; clinic Gmail has 0 filters (forwarding address still accepted, kept for reruns); Drive set up (Patient records, Invoices, Netbanking login, all private); decoy email sent; local `main` = GitHub + this file.
 1. ~~Gate 1 core: Remove it on a real phone~~ **done**. Still to measure: seconds from Bruce creating the filter to the alert on the phone (< 45 s); confirm the phone said "We checked: it's gone" and the console path went grey.
 2. Same session: tap **What does this mean? / Show me how / Call my IT helper**; forward "our bank account has changed" to the bot -> vendor taps **No** -> owner sees **FAKE INVOICE**; check the AI-worded alerts read well on the phone.
@@ -28,12 +38,12 @@ State now: **Remove it worked on a real phone (2026-10-31 14:15 UTC run, see sec
 ### Phase checklist
 | Phase | Gate | Status |
 | --- | --- | --- |
-| 0 Before event (setup only) | all four pass smoke test | **Nearly done**: credentials, bot, chat IDs, vendor, honeytokens, AI wording, agent token all set; open: Drive upload, 2-step check, organiser answers, Ayan's ALL PASS screenshot |
+| 0 Before event (setup only) | all four pass smoke test | **Nearly done**: credentials, bot, chat IDs, vendor, honeytokens, AI wording, agent token, Drive upload all set; open: 2-step check, organiser answers, Ayan's ALL PASS screenshot |
 | 1 Brain alone + console (Sessions 1-2) | Review 1, 2:30 pm | **Done** (console projector-ready, events from teammates' laptops); rehearsal left |
 | 2 Golden path part 1, email (Session 3) | Gate 1, 7:30 pm | **Core done**: real filter (score 7) -> alert -> owner taps Remove it -> deleted + verified in Gmail. Left: timing, explanation buttons, Paisa Pause, 3 clean runs |
-| 3 Golden path part 2, PC + correlation (Session 4) | Gate 2, 2:30 am | **In progress**: agent -> brain, heartbeat alert (16 s), email+PC merge, agent token all live in dry run; real containment not yet |
-| 4 Proof + Should features | Freeze 5:30 am | Eval A/B/C done (A now 17 attacks / 32 normal); expert view done (MITRE + report); Ask Sahayak (RAG) merged; venue baseline not run |
-| 5 Freeze, reset, offline, dry runs | Dry runs 7:15 / 8:35 | Not started |
+| 3 Golden path part 2, PC + correlation (Session 4) | Gate 2, 2:30 am | **In progress**: agent -> brain, heartbeat alert (16 s), email+PC merge, agent token all live in dry run; Drive share + Make it private live on phones; Windows hand test written; real containment and bait-link test not yet |
+| 4 Proof + Should features | Freeze 5:30 am | **Code done**: eval A/B/C (A now 24 attacks / 39 normal); expert view (MITRE + report); Ask Sahayak (RAG); plan check A + B (new markers, ask level, reminders, digest, link check, POP/IMAP, brain token). Venue baseline not run |
+| 5 Freeze, reset, offline, dry runs | Dry runs 7:15 / 8:35 | Reset script written and dry-run checked; real reset, offline test and dry runs not started |
 | 6 Final review + pitch | 9 am - 12 pm | Not started |
 
 ---
@@ -191,23 +201,27 @@ Re-run 2026-10-31 evening after all merges: graph 12.45 / 4 open, `/audit/verify
 ## 6. Per-person status (what each teammate still has to do)
 ### Bruce (A)
 Done: Google Cloud project `chakravyuh-demo`, OAuth client, first sign-in on the brain laptop works; 3 sensor reliability fixes pushed.
-Done: Drive demo data uploaded and decoy email sent (2026-10-31). Still needed: 2-step login off on the clinic account (myaccount.google.com -> Security; cannot be done or checked through the API); hand rehearsal of forwarding + filter; honeytoken decoy doc/email; `sensors/reset_gmail.py` (Level 2 upgrade); SPF/DMARC check.
+Done: Drive demo data uploaded and decoy email sent (2026-10-31); Drive write token, Gmail baseline, Drive test on real phones (2026-11-01). Written by Aaron in his files (pull and read): `sensors/reset_gmail.py`, one alert per shared folder, Make it private on inherited links, POP/IMAP watch, `"google"` preview bot, brain token header in `sensors/run.py`.
+Still needed: bait-link test 4a/4b; 2-step login off on the clinic account (myaccount.google.com -> Security; cannot be done or checked through the API); SPF/DMARC check.
 Checks he owns: hand-made filter -> event in one poll; `forwarding_added` while pending; Remove it -> `verified: true`; public share -> alert -> Make private; honeytoken in browser alerts, in Telegram does not.
 Reminders: 7-day token expiry in Testing mode (delete `token_basic.json` and sign in again on event morning); `POLL_SECONDS=10` for demo.
 
 ### Ayan (C)
-Has messaged the bot (chat ID known). No commits yet.
-Needs: Linux laptop/VM as front-desk PC (an Ubuntu 24.04 ISO and a Kali VirtualBox image are already in Aaron's Downloads if a VM is used); Python 3.11 + `watchdog`/`psutil`; `nftables`; `python -m agent.testfolder make`; hand-test the 7 nft commands with `agent/hand_test_containment.sh` BEFORE `DRY_RUN=0`; his own `.env` (`WATCH_DIR`, `DEVICE_ID`, `BRAIN_URL`/`BRAIN_IP`).
-Code: all Level 3 items and upgrades are now written (section 4.3); Ayan should `git pull`, read them, and run them on the Linux PC. To turn on the agent token, put the same `AGENT_TOKEN` in the brain's and the agent's `.env` (leave both empty until then, or the agent is refused).
+Agent installed on his **Windows** PC and reporting to the brain (dry run); agent token on.
+Needs: `git pull`; run `agent\hand_test_containment.ps1 -BrainIp <brain IP>` as Administrator BEFORE `DRY_RUN=0` and send the ALL PASS screenshot; then Gate 2 with the team.
+New in his files (off by default, only after Gate 2): `RANSOM_NOTES=1` (ransom-note file name = 4th sign), `PC_HEALTH=1` (Defender + update age every 6 h).
 To measure: median files locked and seconds to contain over 5 runs; the four false-trigger tests on a real folder.
 
 ### Aradhya (D)
 Done: BotFather token; Sahayak update pushed (4.4); voice notes wired; Hindi/Kannada extended; IT helper role.
 Still needed: confirm owner/staff/vendor roles and send chat IDs (or confirm Aaron's plan); `CHAT_LANGS` for the Kannada/Hindi demo chat; optional LLM key; 5 non-technical volunteers; native speaker check of Hindi/Kannada; printed demo script and usability sheet.
-Still missing in code: `/lang`, `/setup` onboarding, weekly digest, report button, WhatsApp.
+Done: Ask Sahayak (RAG) with scenario tests.
+Written by Aaron in her files (pull and read): "Did you make it?" buttons (owner-only Yes, it's mine), reminders, `/status`, `/digest`, link check (`sahayak/urlcheck.py`), plain IT helper message with MITRE + report link, new alert types and guides, failure replies without "Done.".
+Still needed: test all of these on real phones; decide whether Paisa Pause should also catch typed questions (needs her go). Only Aaron's laptop runs the bot (see section 1).
+Still missing in code (roadmap): `/lang`, `/setup` onboarding, WhatsApp.
 
 ### Aaron (B)
-Done: sections 5.1-5.9. Still to do: section 8.
+Done: sections 5.1-5.9, plan check Sections A and B (section 8). Still to do: the live tests in section 8, venue baseline, pitch rehearsal.
 
 ---
 
@@ -215,16 +229,16 @@ Done: sections 5.1-5.9. Still to do: section 8.
 1. **FIXED:** `save_evidence` is marked done automatically in `post_event`; test added.
 2. **FIXED by Aradhya (`e2091ea`):** voice notes are now sent from `notify.py` for `hi`/`kn` chats.
 3. **Written (2026-10-31):** process suspension and backup-age check are in `agent/agent.py`; not yet run on Linux.
-4. **Open:** the brain checks `by` only on `release_pc`; other actions are trusted from the bot (which enforces roles).
+4. **FIXED (2026-11-01), once `BRAIN_TOKEN` is set:** POST /actions and non-agent POST /events need `X-Brain-Token`, so nobody on the Wi-Fi can fake a tap or an event (refusals logged as `rejected_call`). `rule_is_mine` is owner-only like `release_pc`.
 5. **Accepted:** `confirm_with_owner` and `report` only tick off; the incident closes when all steps are tapped.
 6. **DONE (2026-10-31):** agent token (`AGENT_TOKEN` + `X-Agent-Token`) checked on `/heartbeat`, `/agent/commands` and agent `/events`; switched on for Aaron's brain and Ayan's agent; refusals tested (401) and logged as `rejected_agent`.
 7. **Open:** `POLL_SECONDS=10` needed for the 45 s alert requirement.
-8. **Open:** Windows containment path (`netsh`) is untested; Linux is the recommended demo PC.
-9. **Open:** `python.exe` is in `SAFE` in `upgrades.py`, so suspension would skip the fake ransomware on a Windows PC.
-10. **New:** the repo is public and `.env.example` now holds the real clinic Gmail address and a LAN IP (from `e2091ea`). No secrets leaked, but consider putting placeholders back or making the repo private if the organisers allow.
+8. **Open:** the demo PC is now Windows, so the `netsh` path is the one that matters. `agent/hand_test_containment.ps1` tests it; waiting for Ayan's run.
+9. **FIXED (2026-11-01):** suspension never froze the fake ransomware on Windows (`python.exe` was in `SAFE`), and a real test showed the plain "top writer" was the IDE, not the ransomware. Now the agent freezes a writer working in `WATCH_DIR`, else one started after the agent, else **nothing** (it never freezes a program that was already running). Windows test with real processes: 9/9 (ransomware picked by folder 3/3 and by start time 3/3; nothing frozen when nothing suspicious 3/3); `python -m agent.upgrades` self-test PASS; `tests/test_upgrades.py`.
+10. **FIXED (2026-11-01):** `.env.example` now has placeholders (no real clinic Gmail, LAN IP or default security code).
 11. **New:** if two brain servers run at once (seen on ports 8000 and 8001), sensors and the agent may post to the wrong one. Run exactly one brain on 8000. "Errno 10048 ... only one usage of each socket address" means a brain is already running on 8000.
-12. **New (found 2026-10-31):** the "one fix" only models prevention. During a live public share it still says "2-step login" (the incident's Make private button is the real answer), and with every edge live every fix drops Risk by 0. Idea: when the best drop is 0 or an incident is open, show "Follow the incident steps first".
-13. **New:** a honeytoken hit marks Attacker -> Gmail, but the decoy doc lives in Drive; arguably it should mark Attacker -> Records folder. Decide with Bruce.
+12. **FIXED in the console (2026-11-01):** during a live attack, One fix shows "Follow the steps in the alert first" (red) with "After that: <fix>". Original note: the "one fix" only models prevention. During a live public share it still says "2-step login" (the incident's Make private button is the real answer), and with every edge live every fix drops Risk by 0. Idea: when the best drop is 0 or an incident is open, show "Follow the incident steps first".
+13. **FIXED (2026-10-31 night):** a decoy-doc hit now lights Attacker -> Drive (`decoy_opened`); a decoy-email hit still lights Gmail.
 14. **FIXED:** CONTRACTS.md now lists `bank_change_request` with entity `vendor:payment`, plus the new `agent_stopping`, `backup_old`, `files_restored`, `restore_files` and the agent token.
 15. **Note:** with the chat IDs set, every incident now sends real Telegram messages to Aradhya and Ayan. Warn them before tests.
 
@@ -313,7 +327,8 @@ Runs as three programs on Aaron's laptop: `uvicorn brain.app:app --host 0.0.0.0 
 - [x] Expert view: console **Expert view** tick box shows MITRE IDs per incident (one map: `sahayak/ask.TECHNIQUE`, now with T1078) and links `GET /incidents/<id>/report` (incident + techniques + audit trail + verify). `GET /mitre`. The report holds attacker-written evidence: never fed to Ask Sahayak or the AI.
 - [ ] Re-run eval on all sets with real data; write numbers honestly.
 ### Phase 5
-- [ ] One-command reset: delete `chakravyuh.db`, clear attacker filters, re-privatise files, restore test folder, release PC, reset graph/honeytokens, `signing.reset_used()`.
+- [x] One-command reset written: `python -m scripts.reset_demo` (release + restore PC, Gmail back to baseline, Drive private, stop/start the three programs, old db moved to `runs/`, `signing.reset_used()`). Dry run checked 2026-11-01.
+- [ ] First real reset (type RESET), then check the console shows the clean state (12.45 / 4 open).
 - [ ] Offline test; two dry runs from reset; freeze at 5:30 am.
 ### Phase 6
 - [ ] Rehearse demo (about 4 min) and CISO Q&A. Aaron answers: architecture, scoring, graph, correlation, false positives, evaluation, "is it just an LLM wrapper?".

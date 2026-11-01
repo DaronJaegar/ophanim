@@ -39,33 +39,43 @@
     ],
   });
 
-  // seed positions left->right by distance from the attacker, then let the force layout (cose) relax them
-  function seed(nodes, edges) {
-    const adj = {}; edges.forEach(e => (adj[e.data.source] = adj[e.data.source] || []).push(e.data.target));
-    const depth = { attacker: 0 }, q = ['attacker'];
-    while (q.length) { const n = q.shift(); (adj[n] || []).forEach(t => { if (depth[t] === undefined) { depth[t] = depth[n] + 1; q.push(t); } }); }
+  // fixed left-to-right layout, the same on every load: column = steps from the attacker (jewels last),
+  // each node sits level with the boxes that lead to it, at least ROW apart, so boxes and labels never overlap
+  const COL = 260, ROW = 130;
+  function positions() {
+    const ids = cy.nodes().map(n => n.id()), parents = {}, depth = { attacker: 0 }, q = ['attacker'];
+    cy.edges().forEach(e => (parents[e.target().id()] = parents[e.target().id()] || []).push(e.source().id()));
+    while (q.length) { const n = q.shift(); cy.getElementById(n).outgoers('node').forEach(t => { if (depth[t.id()] === undefined) { depth[t.id()] = depth[n] + 1; q.push(t.id()); } }); }
+    const last = Math.max(1, ...ids.filter(id => cy.getElementById(id).data('kind') !== 'jewel').map(id => depth[id] ?? 1)) + 1;
     const cols = {};
-    nodes.forEach(n => { const d = n.data.kind === 'jewel' ? 3 : (depth[n.data.id] ?? 1); (cols[d] = cols[d] || []).push(n); });
-    Object.entries(cols).forEach(([d, list]) => list.forEach((n, i) => { n.data.col = +d; n.position = { x: +d * 240, y: (i - (list.length - 1) / 2) * 150 }; }));
-  }
-  // force layout (cose), then keep a left-to-right reading order: x leans on the column (distance from the
-  // attacker), y comes from the forces. Organic, but the attack still reads left (attacker) to right (jewels).
-  function layout(randomize) {
-    const l = cy.layout({ name: 'cose', randomize, animate: false, nodeRepulsion: () => 90000, idealEdgeLength: () => 110,
-      edgeElasticity: () => 120, nodeOverlap: 30, gravity: 0.35, numIter: 1500, padding: 50, fit: false });
-    l.one('layoutstop', () => {
-      const xs = cy.nodes().map(n => n.position('x')), mid = (Math.min(...xs) + Math.max(...xs)) / 2;
-      const target = {};
-      cy.nodes().forEach(n => { const p = n.position(), col = n.data('col') ?? 1; target[n.id()] = { x: col * 250 + (p.x - mid) * 0.3, y: p.y * 0.7 }; });
-      // no overlaps inside a column: keep at least 96px between neighbours
-      const cols = {};
-      cy.nodes().forEach(n => (cols[n.data('col') ?? 1] = cols[n.data('col') ?? 1] || []).push(n.id()));
-      Object.values(cols).forEach(ids => { ids.sort((a, b) => target[a].y - target[b].y);
-        for (let i = 1; i < ids.length; i++) if (target[ids[i]].y - target[ids[i - 1]].y < 96) target[ids[i]].y = target[ids[i - 1]].y + 96; });
-      const opts = { name: 'preset', positions: n => target[n.id()], fit: true, padding: 50 };
-      cy.layout(reduce ? opts : { ...opts, animate: true, animationDuration: 700, animationEasing: 'ease-out' }).run();
+    ids.forEach(id => { const d = cy.getElementById(id).data('kind') === 'jewel' ? last : (depth[id] ?? 1); (cols[d] = cols[d] || []).push(id); });
+    const pos = {};
+    Object.keys(cols).map(Number).sort((a, b) => a - b).forEach(d => {
+      const list = cols[d];
+      const want = id => { const ps = (parents[id] || []).filter(p => pos[p]); return ps.length ? ps.reduce((s, p) => s + pos[p].y, 0) / ps.length : null; };
+      const w = {}; list.forEach((id, i) => { w[id] = d <= 1 || want(id) === null ? (i - (list.length - 1) / 2) * ROW : want(id); });
+      list.sort((a, b) => w[a] - w[b]);
+      const y = []; list.forEach((id, i) => { y[i] = i ? Math.max(w[id], y[i - 1] + ROW) : w[id]; });
+      const shift = list.reduce((s, id) => s + w[id], 0) / list.length - y.reduce((s, v) => s + v, 0) / list.length;
+      list.forEach((id, i) => { pos[id] = { x: d * COL, y: y[i] + shift }; });
     });
-    l.run();
+    return pos;
+  }
+  // fit the whole graph, but never blow it up past 1.4x on a big screen
+  function fitView() {
+    cy.fit(undefined, 50);
+    if (cy.zoom() > 1.4) { cy.zoom(1.4); cy.center(); }
+  }
+  // first load: place at once; Reset layout button: slide dragged boxes back so the click visibly does something
+  function layout(animate) {
+    const pos = positions();
+    if (animate !== true || reduce) {
+      cy.nodes().positions(n => pos[n.id()]);
+      fitView();
+      return;
+    }
+    cy.layout({ name: 'preset', positions: n => pos[n.id()], fit: true, padding: 50,
+      animate: true, animationDuration: 400, animationEasing: 'ease-out', stop: fitView }).run();
   }
 
   const NICE = { no_2sv: 'no 2-step login', live_attack: 'live attack', public_link_live: 'public link (live)' };
@@ -90,9 +100,11 @@
 
   $('zin').onclick = () => cy.zoom({ level: cy.zoom() * 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   $('zout').onclick = () => cy.zoom({ level: cy.zoom() / 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
-  $('fit').onclick = () => cy.fit(undefined, 60);
+  $('fit').onclick = fitView;
   $('relayout').onclick = () => layout(true);
-  addEventListener('resize', () => { cy.resize(); cy.fit(undefined, 60); });
+  // the graph box changes size on window resize, maximise, browser zoom and divider drags: follow all of them
+  let fitRaf = 0;
+  new ResizeObserver(() => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(() => { cy.resize(); fitView(); }); }).observe($('cy'));
 
   // live edges: slow underlay pulse (not a flash), only while an attack is live
   let pulseOn = false;
@@ -107,11 +119,10 @@
   function updateGraph(g) {
     const key = g.nodes.map(n => n.data.id).sort().join(',');
     if (key !== nodeKey) {           // first load or nodes changed: rebuild + force layout
-            nodeKey = key;
-      seed(g.nodes, g.edges);
+      nodeKey = key;
       cy.elements().remove();
       cy.add([...g.nodes, ...g.edges]);
-      layout(false);
+      layout();
     } else {                         // same nodes: update edges in place, keep positions and zoom
       const ids = new Set(g.edges.map(e => e.data.id));
       cy.edges().forEach(e => { if (!ids.has(e.id())) e.remove(); });
@@ -202,8 +213,17 @@
       const liveN = updateGraph(g);
       setRisk(g.risk, liveN > 0);
       $('open').textContent = g.open_paths;
-      $('fix').textContent = g.one_fix ? g.one_fix.text : 'No fix needed';
-      $('fix-impact').innerHTML = g.one_fix ? `<span class="chip lime">closes ${esc(g.one_fix.paths_closed)} paths</span><span class="chip">risk -${esc(g.one_fix.risk_drop)}</span>` : '';
+      // During a live attack the prevention fix is the wrong first step: the alert's buttons stop the attack
+      const impact = g.one_fix ? `<span class="chip lime">closes ${esc(g.one_fix.paths_closed)} paths</span><span class="chip">risk -${esc(g.one_fix.risk_drop)}</span>` : '';
+      $('fix-block').classList.toggle('urgent', liveN > 0);
+      if (liveN > 0) {
+        $('fix').textContent = 'Follow the steps in the alert first';
+        $('fix-impact').innerHTML = `<span class="chip red">live attack</span>` +
+          (g.one_fix ? `<span class="after">After that: ${esc(g.one_fix.text)}</span>` : '');
+      } else {
+        $('fix').textContent = g.one_fix ? g.one_fix.text : 'No fix needed';
+        $('fix-impact').innerHTML = impact;
+      }
       showDetail();
       renderPaths(paths.filter(p => p.open).slice(0, 3));
       $('audit').innerHTML = a.ok ? '<span class="ok">verified</span>' : `<span class="bad">BROKEN at row ${esc(a.broken_at)}</span>`;
@@ -222,24 +242,25 @@
 
   /* ---------------- resizable split (pointer + keyboard) ---------------- */
   const split = $('split'), div = $('divider');
-  let raf = 0;
   function setLeft(pct, save) {
     pct = Math.max(30, Math.min(80, pct));
     split.style.setProperty('--left', pct + '%');
     div.setAttribute('aria-valuenow', Math.round(pct));
-    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => cy.resize());
     if (save) store.set('ophanim.split', String(pct));
   }
   const saved = parseFloat(store.get('ophanim.split'));
   if (saved) setLeft(saved);
   div.addEventListener('pointerdown', e => {
     div.setPointerCapture(e.pointerId); div.classList.add('drag');
-    const move = ev => { const r = split.getBoundingClientRect(); setLeft(((ev.clientX - r.left) / r.width) * 100); };
-    const up = () => { div.classList.remove('drag'); div.removeEventListener('pointermove', move); div.removeEventListener('pointerup', up);
-      setLeft(parseFloat(split.style.getPropertyValue('--left')), true); cy.fit(undefined, 60); };
-    div.addEventListener('pointermove', move); div.addEventListener('pointerup', up);
+    const move = ev => { if (!ev.buttons) return up(); const r = split.getBoundingClientRect(); setLeft(((ev.clientX - r.left) / r.width) * 100); };
+    // end the drag however it ends (button released, capture lost, pointer cancelled), or the split keeps following the mouse
+    const up = () => { div.classList.remove('drag');
+      ['pointermove', 'pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => div.removeEventListener(t, t === 'pointermove' ? move : up));
+      setLeft(parseFloat(split.style.getPropertyValue('--left')), true); };
+    div.addEventListener('pointermove', move);
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => div.addEventListener(t, up));
   });
-  div.addEventListener('dblclick', () => { setLeft(60, true); cy.fit(undefined, 60); });
+  div.addEventListener('dblclick', () => setLeft(60, true));
   div.addEventListener('keydown', e => {
     const cur = parseFloat(split.style.getPropertyValue('--left')) || 60, step = e.shiftKey ? 10 : 2;
     const map = { ArrowLeft: cur - step, ArrowRight: cur + step, Home: 30, End: 80, Enter: 60 };

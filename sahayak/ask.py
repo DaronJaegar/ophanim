@@ -370,6 +370,8 @@ TECHNIQUE = {"filter_added": "T1114.003 email forwarding rule, T1564.008 email h
              "forwarding_added": "T1114.003 email forwarding", "autoforward_on": "T1114.003 email forwarding",
              "sendas_added": "T1078 valid accounts (sending as the clinic)",
              "mail_download_on": "T1114.002 remote email collection",
+             "file_public": "T1530 data from cloud storage",
+             "bank_change_request": "T1656 impersonation (fake vendor bank details)",
              "honeytoken_hit": "T1078 valid accounts (someone inside the clinic's files)",
              "ransomware_suspected": "T1486 data encrypted for impact",
              "agent_stopping": "T1562.001 disable security tools", "heartbeat_missing": "T1562.001 disable security tools"}

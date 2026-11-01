@@ -1,6 +1,6 @@
 # Gate 2 hand test of containment on Windows (Ayan, Module C). Run in an Administrator PowerShell
 # from the project folder, with the brain running:
-#   powershell -ExecutionPolicy Bypass -File agent\hand_test_containment.ps1 -BrainIp 10.215.200.40
+#   powershell -ExecutionPolicy Bypass -File agent\hand_test_containment.ps1 -BrainIp <brain laptop IP>
 # Uses the real agent/contain.py (DRY_RUN=0 for this run only), checks google.com is blocked and the
 # brain is still reachable, then ALWAYS releases. Windows version of hand_test_containment.sh.
 param(

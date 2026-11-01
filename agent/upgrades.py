@@ -1,23 +1,68 @@
 """Level 3 upgrades for the PC agent (Ayan, Module C): freeze the writing process, check backup age.
-Tested: picks the process that wrote most in the last second and suspends it (status: stopped)."""
-import json, os, time, psutil, subprocess, sys
-SAFE = {"system", "explorer.exe", "svchost.exe", "csrss.exe", "winlogon.exe", "systemd", "python.exe"}
+Tested on Windows: picks the demo ransomware (not a busier IDE/browser) and suspends it (status: stopped)."""
+import json, os, time, psutil, subprocess, sys, tempfile
+# Never frozen: the OS, the desktop, the antivirus, and a few busy Windows services.
+# python.exe is NOT here: the demo ransomware is a Python script. The agent itself is skipped by pid instead.
+SAFE = {"system", "registry", "memory compression", "smss.exe", "csrss.exe", "wininit.exe", "winlogon.exe",
+        "services.exe", "lsass.exe", "svchost.exe", "explorer.exe", "dwm.exe", "msmpeng.exe", "nissrv.exe",
+        "searchindexer.exe", "systemd"}
 
-def top_writer_now(sample=1.0):
-    """The process that wrote the most bytes in the last `sample` seconds (not since boot)."""
+def _agent_family():
+    """The agent's own pid and its Python parents (on Windows the venv launcher starts python.exe as a child)."""
+    me = psutil.Process()
+    out = {me.pid}
+    try:
+        for p in me.parents():
+            if not p.name().lower().startswith("python"):
+                break
+            out.add(p.pid)
+    except psutil.Error:
+        pass
+    return out
+
+def _in_folder(p, folder):
+    """Does this process point at the watched folder (command line or an open file)?"""
+    f = os.path.normcase(os.path.abspath(folder))
+    try:
+        if any(f in os.path.normcase(a) for a in p.cmdline()):
+            return True
+        return any(os.path.normcase(o.path).startswith(f) for o in p.open_files())
+    except (psutil.Error, OSError):
+        return False
+
+def top_writer_now(sample=1.0, folder=None, since=None):
+    """The process to freeze: of those that wrote in the last `sample` seconds, first one working in `folder`,
+    else one started after `since` (programs already running before the agent are not suspects), else None.
+    Without folder/since: simply the top writer (self-test). Raw bytes alone are not enough: a busy browser or
+    IDE out-writes the slow demo ransomware, and freezing the wrong program is worse than freezing none."""
+    skip = _agent_family()
     before = {}
     for p in psutil.process_iter(["pid", "name"]):
         try: before[p.pid] = (p, p.io_counters().write_bytes)
         except (psutil.Error, AttributeError): pass
     time.sleep(sample)
-    best = None
+    writing = []
     for pid, (p, w0) in before.items():
         try:
             d = p.io_counters().write_bytes - w0
-            if pid != os.getpid() and p.name().lower() not in SAFE and (best is None or d > best[1]):
-                best = (p, d)
+            if d > 0 and pid not in skip and p.name().lower() not in SAFE:
+                writing.append((d, p))
         except (psutil.Error, AttributeError): pass
-    return best[0] if best and best[1] > 0 else None
+    writing.sort(key=lambda x: -x[0])
+    if folder is None and since is None:
+        return writing[0][1] if writing else None
+    if folder:
+        for d, p in writing:
+            if _in_folder(p, folder):
+                return p
+    if since:
+        for d, p in writing:
+            try:
+                if p.create_time() >= since:
+                    return p
+            except psutil.Error:
+                pass
+    return None
 
 def backup_age_days(folder):
     newest = 0
@@ -49,10 +94,16 @@ def pc_health():
         return None
 
 if __name__ == "__main__":
-    w = subprocess.Popen([sys.executable, "-c", "import os,time\nf=open('/tmp/claude-0/-home-claude/18b9976a-7343-53b1-8ba4-d83da710722e/scratchpad/big','wb')\nfor i in range(400):\n f.write(os.urandom(100000)); f.flush(); os.fsync(f.fileno()); time.sleep(0.01)"])
-    time.sleep(0.3)
+    # Self-test (Windows or Linux): a Python child writes fast; it must be picked, frozen and resumed.
+    big = os.path.join(tempfile.gettempdir(), "chakravyuh_writer_test.bin")
+    w = subprocess.Popen([sys.executable, "-c", f"import os,time\nf=open({big!r},'wb')\nfor i in range(1500):\n f.seek(0); f.write(os.urandom(100000)); f.flush(); os.fsync(f.fileno()); time.sleep(0.01)"])
+    time.sleep(0.5)
+    expected = {w.pid} | {c.pid for c in psutil.Process(w.pid).children(recursive=True)}   # venv launcher + its child
     p = top_writer_now()
-    print("top writer pid", p and p.pid, "expected", w.pid)
-    if p and p.pid == w.pid:
-        p.suspend(); time.sleep(0.2); print("status", p.status()); p.resume()
+    print("top writer pid", p and p.pid, "expected one of", sorted(expected), "(python.exe)")
+    if p and p.pid in expected:
+        p.suspend(); time.sleep(0.2); print("status", p.status()); p.resume(); print("PASS")
+    else:
+        print("FAIL")
     w.wait()
+    os.remove(big)
