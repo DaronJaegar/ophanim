@@ -44,25 +44,21 @@
         </dl>
       </article>
       <article class="step" data-step="1" aria-hidden="true">
-        <p class="lbl"><span class="num">/01</span> One brain</p>
         <h2 data-scramble>Four sensors. One brain.</h2>
         <p>Gmail, Google Drive, the PC agent and the decoy links all send one event format to one brain. It scores every change, keeps the attack-path graph and decides what needs the owner and what it can handle alone.</p>
       </article>
       <article class="step" data-step="2" aria-hidden="true">
-        <p class="lbl"><span class="num">/02</span> Chakravyuh</p>
         <h2 data-scramble>Every path, scored.</h2>
         <p>Chakravyuh maps how an attacker gets from a stolen password to <b>Clinic money</b> or <b>Patient records</b>. Risk is the sum, over every path, of how easy each step is times what's at the end. It then names the one fix that removes the most risk.</p>
       </article>
       <article class="step" data-step="3" aria-hidden="true">
-        <p class="lbl"><span class="num">/03</span> Ophanim</p>
         <h2 data-scramble>Wheels of eyes.</h2>
-        <p>The Ophanim are the wheels within wheels, covered in eyes, that never stop turning. Nothing about the clinic's accounts or PC changes without one of them seeing it, and a tamper-proof log records that it did.</p>
+        <p>Ophanim is the brain that joins both halves. <b>Chakravyuh</b> finds and stops the attack. <b>Sahayak</b> tells the owner what happened and what to tap. One system, always watching.</p>
       </article>
     </div>
     <div class="canvas-wrap" aria-hidden="true">
       <canvas id="particles"></canvas>
       <div class="canvas-fallback"><span data-ophanim-mark data-size="320" data-spin="slow" data-follow></span></div>
-      <div class="hud hud-tl lbl">Ophanim // particle view</div>
       <div class="hud hud-br lbl" id="hud-step">/00 brain</div>
     </div>
     <ol class="progress" aria-hidden="true"><li></li><li></li><li></li><li></li></ol>
@@ -88,27 +84,27 @@
   <div class="group">
     <div class="group-head"><h3>Chakravyuh</h3><span class="chip ink">The defence</span><p>Spots attacks, scores the risk, shows the path.</p></div>
     <div class="cards">
-      <article class="card cross"><p class="lbl"><span class="num">C/01</span> Attack-path graph</p><h4>Every route to your money, scored</h4><p>Maps how an attacker reaches money or records, and names the one fix that cuts most risk.</p><div class="mini"><span class="chip">Risk 12.45</span><span class="chip">4 open paths</span></div></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/02</span> Email rule watch</p><h4>Catches hidden email forwarding</h4><p>Flags new Gmail rules that send mail outside or hide it.</p><div class="mini"><span class="chip red">5+ alert</span><span class="chip lime">3–4 ask</span><span class="chip">&lt;3 digest</span></div></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/03</span> Drive watch</p><h4>Locks files shared publicly</h4><p>Finds "anyone with the link" files. One tap makes them private.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/04</span> PC agent</p><h4>Stops ransomware on the PC</h4><p>Two warning signs and the PC cuts itself off the network.</p><div class="mini"><span class="chip red">Only automatic action</span></div></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/05</span> Honeytokens</p><h4>Fake bank login traps intruders</h4><p>Decoy links no real user opens. One click raises an alert.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/06</span> Correlation</p><h4>One incident, not ten alerts</h4><p>Email and PC alerts about one person merge, with fix steps in order.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/07</span> Tamper alarm</p><h4>Alerts if the PC guard goes quiet</h4><p>15 seconds of silence from the agent counts as an attack.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/08</span> Audit log</p><h4>A log no one can secretly edit</h4><p>Every event is hash-chained. Edits show the exact broken row.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">C/09</span> Expert view</p><h4>Technical report for experts</h4><p>MITRE ATT&amp;CK tags and the full audit trail per incident.</p></article>
+      <article class="card cross"><h4>Every route to your money, scored</h4><p>Maps how an attacker reaches money or records, and names the one fix that cuts most risk.</p><div class="mini"><span class="chip">Risk 12.45</span><span class="chip">4 open paths</span></div></article>
+      <article class="card cross"><h4>Catches hidden email forwarding</h4><p>Flags new Gmail rules that send mail outside or hide it.</p><div class="mini"><span class="chip red">5+ alert</span><span class="chip lime">3–4 ask</span><span class="chip">&lt;3 digest</span></div></article>
+      <article class="card cross"><h4>Locks files shared publicly</h4><p>Finds "anyone with the link" files. One tap makes them private.</p></article>
+      <article class="card cross"><h4>Stops ransomware on the PC</h4><p>Two warning signs and the PC cuts itself off the network.</p><div class="mini"><span class="chip red">Only automatic action</span></div></article>
+      <article class="card cross"><h4>Fake bank login traps intruders</h4><p>Decoy links no real user opens. One click raises an alert.</p></article>
+      <article class="card cross"><h4>One incident, not ten alerts</h4><p>Email and PC alerts about one person merge, with fix steps in order.</p></article>
+      <article class="card cross"><h4>Alerts if the PC guard goes quiet</h4><p>15 seconds of silence from the agent counts as an attack.</p></article>
+      <article class="card cross"><h4>A log no one can secretly edit</h4><p>Every event is hash-chained. Edits show the exact broken row.</p></article>
+      <article class="card cross"><h4>Technical report for experts</h4><p>MITRE ATT&amp;CK tags and the full audit trail per incident.</p></article>
     </div>
   </div>
 
   <div class="group sahayak">
     <div class="group-head"><h3>Sahayak</h3><span class="chip violet">The helper</span><p>A Telegram bot: plain words, one-tap choices.</p></div>
     <div class="cards">
-      <article class="card cross"><p class="lbl"><span class="num">S/01</span> Plain alerts</p><h4>Alerts in three plain lines</h4><p>No jargon. AI may reword a message, never decide.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">S/02</span> Signed buttons</p><h4>Fix it with one safe tap</h4><p>"Remove it" or "Make private". Single-use, expires in 15 minutes.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">S/03</span> Paisa Pause</p><h4>Pauses suspicious payments</h4><p>Vendor bank details changed? Check by phone before paying.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">S/04</span> Ask Sahayak</p><h4>Answers staff questions</h4><p>Answers come from the clinic's own safety guides.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">S/05</span> Runbook</p><h4>Step-by-step fix guide</h4><p>One button per step, with the reason. Can call the IT helper.</p></article>
-      <article class="card cross"><p class="lbl"><span class="num">S/06</span> Check this</p><h4>Is this link safe?</h4><p>Forward a link or screenshot, get a quick safety hint.</p></article>
+      <article class="card cross"><h4>Alerts in three plain lines</h4><p>No jargon. AI may reword a message, never decide.</p></article>
+      <article class="card cross"><h4>Fix it with one safe tap</h4><p>"Remove it" or "Make private". Single-use, expires in 15 minutes.</p></article>
+      <article class="card cross"><h4>Pauses suspicious payments</h4><p>Vendor bank details changed? Check by phone before paying.</p></article>
+      <article class="card cross"><h4>Answers staff questions</h4><p>Answers come from the clinic's own safety guides.</p></article>
+      <article class="card cross"><h4>Step-by-step fix guide</h4><p>One button per step, with the reason. Can call the IT helper.</p></article>
+      <article class="card cross"><h4>Is this link safe?</h4><p>Forward a link or screenshot, get a quick safety hint.</p></article>
     </div>
   </div>
 </section>
@@ -116,7 +112,6 @@
 <!-- GOLDEN PATH -->
 <section class="incident" id="incident" aria-labelledby="i-h">
   <header class="sec-head">
-    <p class="lbl">/ The demo, end to end</p>
     <h2 id="i-h">One attack, one incident.</h2>
     <p class="sec-sub">Attackers don't stay in one place. Ophanim follows the chain across email and the PC and hands the owner one incident with the steps in order.</p>
   </header>
@@ -162,7 +157,6 @@
     </div>
   </div>
   <div class="preview-cta">
-    <p class="lbl">/ Live</p>
     <h2 id="p-h">See it live.</h2>
     <p>The console updates every 2 seconds from the brain: the graph on the left, everything the owner and the expert need on the right.</p>
     <a class="btn primary" href="/console">Open console <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>

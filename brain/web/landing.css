@@ -15,7 +15,7 @@ html{scroll-behavior:smooth}
 .steps{position:relative;z-index:2;display:grid;align-items:center;padding:0 48px}
 .step{grid-area:1/1;max-width:640px;opacity:0;visibility:hidden;transform:translateY(16px);transition:opacity .5s var(--ease-out),transform .5s var(--ease-out),visibility 0s .5s}
 .step.is-active{opacity:1;visibility:visible;transform:none;transition:opacity .6s var(--ease-out),transform .6s var(--ease-out),visibility 0s}
-.step h2{font-size:clamp(40px,5.2vw,76px);margin:14px 0 18px}
+.step h2{font-size:clamp(40px,5.2vw,76px);margin:0 0 18px}
 .step p{font-size:16px;max-width:54ch}
 .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
 .hero-h{font-size:clamp(46px,6.6vw,104px);line-height:.94}
@@ -58,7 +58,7 @@ html{scroll-behavior:smooth}
 .cards .card:nth-child(3n){border-right:0}
 .card:hover{background:var(--panel)}
 .card .lbl{margin:0}
-.card h4{font-size:24px;line-height:1.1;margin:10px 0 8px}
+.card h4{font-size:24px;line-height:1.1;margin:0 0 8px}
 .card p:not(.lbl){margin:0;font-size:15px;line-height:1.5;color:var(--graphite);max-width:42ch}
 .card .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
 .sahayak .card .num{color:var(--violet-text)}
@@ -87,7 +87,7 @@ html{scroll-behavior:smooth}
 .pv-fix{font:700 18px/1.2 var(--display);text-transform:uppercase;margin-top:6px!important}
 .pv-live{stroke-dasharray:12 8;animation:dash 1.2s linear infinite}
 @keyframes dash{to{stroke-dashoffset:-20}}
-.preview-cta h2{font-size:clamp(44px,5vw,80px);margin:10px 0 14px}
+.preview-cta h2{font-size:clamp(44px,5vw,80px);margin:0 0 14px}
 .preview-cta p:not(.lbl){font-size:16px;margin:0 0 24px}
 
 .foot-row{display:flex;align-items:center;gap:24px;padding:28px 48px}
