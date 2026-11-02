@@ -18,3 +18,14 @@ and fill it in. Never commit `.env`, `credentials.json` or `token_*.json`.
 
 Demo safety: `agent.fake_ransomware` only runs in a folder containing `.chakravyuh_test_folder`
 (created by `agent.testfolder make`). Keep `DRY_RUN=1` until you have tested containment by hand.
+
+## Sahayak, the assistant (Module D, Aradhya Kothari)
+
+The Telegram assistant: the only part of Ophanim the clinic's people see.
+
+- **Plain-word alerts**: what happened, how serious, the next step; a jargon filter keeps technical words out of staff messages
+- **Signed buttons**: HMAC-signed, one-time, 15-minute expiry; only the owner can reconnect the PC or restore files
+- **Paisa Pause**: forward a "bank details changed" message and get "Don't pay yet", confirmed with the vendor on the saved number
+- **Ask Sahayak**: questions in your own words, answered by RAG over 53 written guides (`sahayak/guides.md`), optional Groq LLM rewording, safety checks on every reply, and it still works with the AI off
+- **Whom to call**: "call IT help", "owner number" or "who do I call" gives names and numbers from `.env` (never stored in the repo)
+- Tests: `tests/test_sahayak.py` and `tests/test_ask_scenarios.py` (20 real-life scenarios: hacked email, ransomware, stolen bank details, OTP scams)
