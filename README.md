@@ -103,38 +103,107 @@ Run from the public code: `python -m pytest tests -q` and `python -m eval.run_ev
 
 Sets B and C were written by the team, so they are sanity checks rather than independent proof.
 
-## Run it
+## Project structure
+
+```
+agent/      PC agent: ransomware detector, network containment, safe fake ransomware, install scripts
+brain/      Chakravyuh: FastAPI app, incident joining, scoring, audit log, risk map, web console (brain/web)
+common/     Shared settings (config.py reads .env) and the event format (contracts.py)
+sahayak/    Telegram bot: alerts, signed buttons, Paisa Pause, Ask Sahayak (guides.md), voice notes
+sensors/    Gmail and Drive watchers, trap links (honeytokens), one-tap fixes, demo data
+eval/       Evaluation sets A, B, C and the runner
+scripts/    reset_demo.py: one-command reset between demo runs
+tests/      pytest suite
+```
+
+## Setup
+
+### 1. Requirements
+
+- Python 3.11 or newer
+- A Telegram account (for the bot) and a Google account to act as the clinic's Gmail and Drive
+- Windows or Linux for the PC agent (containment needs administrator / root rights)
+
+### 2. Install
 
 ```bash
+git clone https://github.com/DaronJaegar/ophanim.git
+cd ophanim
 python -m venv .venv
 # Windows: .venv\Scripts\activate    Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env        # then fill it in (see below)
+cp .env.example .env          # Windows: copy .env.example .env
 ```
+
+### 3. Fill in `.env`
+
+All settings live in `.env` (see `.env.example` for every key, with comments). The minimum to run:
+
+| Setting | What to put |
+| --- | --- |
+| `BRAIN_URL`, `BRAIN_IP` | The brain laptop's address, e.g. `http://192.168.1.10:8000` (find it with `ipconfig` / `ip addr`). Use `127.0.0.1` if everything runs on one machine |
+| `CLINIC_EMAIL` | The Gmail address the sensors watch |
+| `TELEGRAM_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `OWNER_CHAT_ID`, `STAFF_CHAT_IDS`, `VENDOR_CHAT_IDS`, `IT_CHAT_ID` | Telegram chat IDs. Start the bot, send it `/start` from each phone, and it replies with that chat's ID. Vendors use `name:chat_id` |
+| `HMAC_SECRET`, `BRAIN_TOKEN`, `AGENT_TOKEN` | Long random strings (no `#`). Use the same values on every laptop that runs a part |
+| `SECURITY_CODE` | A code your team picks; never leave the default |
+| `HONEY_TOKENS` | Two random tokens for the trap links, e.g. `decoy-doc:<random>,decoy-email:<random>` |
+
+Optional: `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` for any OpenAI-compatible endpoint (we used Groq). Without
+them Sahayak sends its written templates. Also optional: contact names and phone numbers (`OWNER_PHONE`, `IT_PHONE`, ...),
+`VENDOR_DOMAINS`, and `CHAT_LANGS` for Hindi or Kannada chats.
+
+To make a random secret: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+
+### 4. Google access (for the sensors)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Gmail API** and **Google Drive API**.
+2. Set up the OAuth consent screen in **Testing** mode and add the clinic Gmail as a test user.
+3. Create an **OAuth client ID** of type **Desktop app**, download it, and save it as `credentials.json` in the project folder.
+4. The first run of the sensors opens a browser to sign in, then saves `token_basic.json`. In Testing mode this
+   token expires after 7 days; delete it and sign in again.
+
+Scopes used: `gmail.settings.basic` and `drive.metadata.readonly` for watching; full Drive access only for **Make it private**.
+
+### 5. Run it
+
+Start each part in its own terminal (all from the project folder, with the virtual environment active):
 
 | Part | Command |
 | --- | --- |
-| Chakravyuh, the brain | `uvicorn brain.app:app --host 0.0.0.0 --port 8000`, then open `http://<ip>:8000/console` |
-| Sensors | `python -m sensors.run` (needs `credentials.json` from Google Cloud) |
+| Chakravyuh, the brain | `uvicorn brain.app:app --host 0.0.0.0 --port 8000`, then open `http://<ip>:8000/` (landing) or `/console` |
+| Sensors | `python -m sensors.run` |
+| Sahayak | `python -m sahayak.bot` (run on one machine only; Telegram allows one bot instance per token) |
 | PC agent | `python -m agent.testfolder make <folder>`, then `python -m agent.agent` as administrator (Linux: `sudo -E python -m agent.agent`) |
-| Sahayak | `python -m sahayak.bot` |
-| Tests | `python -m pytest tests -q` |
-| Evaluation | `python -m eval.run_eval` |
-| Demo reset | `python -m sensors.reset_gmail --yes` |
 
-### Settings (`.env`)
+The PC agent can also be installed on a separate Windows PC in one step, from an Administrator PowerShell:
+`powershell -ExecutionPolicy Bypass -File agent\install.ps1 -BrainIp <brain ip>` (Linux: `agent/install.sh`).
 
-Copy `.env.example` and fill in: the Telegram bot token and chat IDs (owner, staff, vendor, IT helper), the
-brain's address, the shared secrets (`HMAC_SECRET`, `BRAIN_TOKEN`, `AGENT_TOKEN`), and optionally an
-OpenAI-compatible AI endpoint (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`) and contact names and phone numbers.
-Everything works without the AI.
+### 6. Try the demo
 
-**Never commit `.env`, `credentials.json` or `token_*.json`.**
+| Step | How |
+| --- | --- |
+| Make demo files | `python -m sensors.demo_files` writes fake patient notes, invoices and decoy documents to `demo_files/` to upload to Drive |
+| Bad email rule | In the clinic Gmail, add a filter that forwards invoice mail to an outside address, then tap **Remove it** on the phone |
+| Public file | Share a Drive file with "anyone with the link", then tap **Make it private** |
+| Fake vendor bill | Forward "our bank account has changed" to the bot to trigger Paisa Pause |
+| Ransomware | `python -m agent.fake_ransomware <test folder>` (only works in a folder made by `agent.testfolder make`) |
+| Reset | `python -m scripts.reset_demo --dry-run`, then `python -m scripts.reset_demo` |
+
+Bot commands: `/start`, `/ask <question>`, `/status`, `/digest`, `/help`.
+
+### 7. Tests and evaluation
+
+```bash
+python -m pytest tests -q
+python -m eval.run_eval
+```
 
 ### Demo safety
 
 - `agent.fake_ransomware` only runs in a folder containing `.chakravyuh_test_folder` (made by `agent.testfolder make`), and only scrambles copies.
 - Keep `DRY_RUN=1` (firewall commands are printed, not run) until containment has been tested by hand.
+- **Never commit `.env`, `credentials.json`, `token_*.json` or `chakravyuh.db`.** They are listed in `.gitignore`.
 
 ## Tech stack
 
